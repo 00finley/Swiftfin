@@ -20,6 +20,9 @@ import SwiftUI
 ///
 /// Previews never send playback reports (start/progress/stopped), so the server's watch progress
 /// is untouched. The preview uses its own play session, and its transcode is stopped when it ends.
+///
+/// Previews follow the same skip rules as the player (global settings plus the show's intro /
+/// credits rule): skipped intros and recaps are jumped over, and skipped credits end the preview.
 @MainActor
 final class HomePreviewController: ObservableObject {
 
@@ -56,6 +59,8 @@ final class HomePreviewController: ObservableObject {
     private var loadTask: Task<Void, Never>?
     private var immersiveTask: Task<Void, Never>?
     private var timeObserver: Any?
+    private var segmentTimeObserver: Any?
+    private var segmentObserver: MediaSegmentObserver?
     private var statusObservation: NSKeyValueObservation?
     private var isLayerReadyForDisplay = false
     private var startSeconds: Double = 0
@@ -162,6 +167,9 @@ final class HomePreviewController: ObservableObject {
                 return
             }
 
+            // Fetches the item's segments and resolves the show's skip rule
+            segmentObserver = playbackItem.mediaSegmentObserver
+
             if let deviceID = Container.shared.currentUserSession()?.client.configuration.deviceID {
                 playSession = (playbackItem.playSessionID, deviceID)
             }
@@ -208,6 +216,7 @@ final class HomePreviewController: ObservableObject {
         guard loadingItemID == itemID else { return }
 
         player.play()
+        observeSegments(of: itemID)
 
         // Reveal only once frames are flowing: the layer can display and playback has advanced
         let startTime = player.currentTime().seconds
@@ -236,6 +245,32 @@ final class HomePreviewController: ObservableObject {
                     ]
                 )
                 self.scheduleImmersive()
+            }
+        }
+    }
+
+    /// Jumps past intros and recaps the show skips, and ends the preview at credits it skips.
+    private func observeSegments(of itemID: String) {
+        guard segmentObserver != nil else { return }
+
+        segmentTimeObserver = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self] time in
+            MainActor.assumeIsolated {
+                guard let self, self.loadingItemID == itemID, time.seconds.isFinite,
+                      let action = self.segmentObserver?.previewAction(at: .seconds(time.seconds))
+                else { return }
+
+                switch action {
+                case let .seek(end):
+                    self.logger.info("Home preview skipped a segment", metadata: ["itemID": .string(itemID)])
+                    self.player.seek(to: CMTime(seconds: end.seconds, preferredTimescale: 600))
+
+                case .stop:
+                    self.logger.info("Home preview reached skipped credits", metadata: ["itemID": .string(itemID)])
+                    self.stop()
+                }
             }
         }
     }
@@ -309,6 +344,11 @@ final class HomePreviewController: ObservableObject {
             player.removeTimeObserver(timeObserver)
             self.timeObserver = nil
         }
+        if let segmentTimeObserver {
+            player.removeTimeObserver(segmentTimeObserver)
+            self.segmentTimeObserver = nil
+        }
+        segmentObserver = nil
 
         if player.currentItem != nil {
             player.pause()

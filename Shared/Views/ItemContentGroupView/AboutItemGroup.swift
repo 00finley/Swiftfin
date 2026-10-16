@@ -15,9 +15,11 @@ struct AboutItemGroup: ContentGroup {
     let id: String
     @SharedBaseItem
     var item: BaseItemDto
+    /// The item's media, or the series' next-up episode's (languages on tvOS)
+    var mediaSource: MediaSourceInfo?
 
     func body(with viewModel: Empty) -> Body {
-        Body(item: item)
+        Body(item: item, mediaSource: mediaSource)
     }
 
     struct Body: View {
@@ -27,6 +29,7 @@ struct AboutItemGroup: ContentGroup {
 
         @SharedBaseItem
         var item: BaseItemDto
+        var mediaSource: MediaSourceInfo?
 
         private struct AboutCard<Content: View>: View {
 
@@ -186,6 +189,14 @@ struct AboutItemGroup: ContentGroup {
         private let cardAspectRatio: CGFloat = 1.77
 
         var body: some View {
+            #if os(tvOS)
+            ItemAboutSection(item: item, mediaSource: mediaSource ?? item.mediaSources?.first)
+            #else
+            legacyBody
+            #endif
+        }
+
+        private var legacyBody: some View {
             ContentGroupSection {
                 ScrollView(.horizontal) {
                     HStack(spacing: EdgeInsets.itemSpacing) {

@@ -184,8 +184,9 @@ extension SeriesEpisodeContentGroup {
 
         private static var layout: CollectionHStackLayout {
             #if os(tvOS)
+            // About 410 pt wide cards with the next one peeking in, like the Apple TV app
             .grid(
-                columns: 3.5,
+                columns: 4.15,
                 rows: 1,
                 columnTrailingInset: 0
             )
@@ -258,6 +259,15 @@ extension SeriesEpisodeContentGroup {
                 .episodes,
                 priority: .userInitiated
             )
+            #if os(tvOS)
+            // Moving down from the hero lands on the season pills (they're nearest); like the Apple TV
+            // app, go on to the current episode the first time instead
+            .onChange(of: focusedSection) { _, newValue in
+                guard newValue == .seasons, !hasFocusedRow, let preferredElementID else { return }
+
+                focusedElement = preferredElementID
+            }
+            #endif
             .accessibilityElement(children: .contain)
             .accessibilityLabel(L10n.seasons)
         }

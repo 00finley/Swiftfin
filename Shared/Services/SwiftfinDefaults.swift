@@ -314,6 +314,11 @@ extension Defaults.Keys {
             static var outro: Key<MediaSegmentBehavior> {
                 UserKey("mediaSegmentOutroBehavior", default: .showButton)
             }
+
+            /// Per-series intro / credits exceptions, keyed by series ID (see `ShowSkipRules`).
+            static var showRules: Key<[String: ShowSkipRule]> {
+                UserKey("mediaSegmentShowRules", default: [:])
+            }
         }
 
         static var menuActionButtons: Key<[VideoPlayerActionButton]> {

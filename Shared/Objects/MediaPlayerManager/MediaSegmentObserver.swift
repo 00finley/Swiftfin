@@ -26,7 +26,8 @@ extension MediaPlayerItem {
 }
 
 /// Watches playback against the item's media segments (intro, recap, credits, ...)
-/// and offers skip / next episode overlay actions according to the user's settings.
+/// and offers skip / next episode overlay actions according to the user's settings
+/// and the show's intro / credits rule (`ShowSkipRules`).
 final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
 
     /// Overlay action supplement ID used by the video player.
@@ -44,6 +45,21 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
     @Published
     private(set) var countdown: Int?
 
+    /// "Watching intro" / "Watching credits": a short-lived chip shown instead of a skip button
+    /// when the show's rule is to watch that segment.
+    @Published
+    private(set) var watchingNotice: MediaSegmentType?
+
+    /// With credits set to Watch: seconds left in the file while the next episode countdown shows
+    @Published
+    private(set) var endOfFileCountdown: Int?
+
+    /// The show's intro / credits rule; nil for items that aren't episodes (global settings apply)
+    private(set) var rule: ResolvedShowSkipRule?
+
+    /// How long the "Watching intro" chip stays up
+    static let watchingNoticeDuration: Duration = .seconds(5)
+
     /// Whether the player is currently showing overlay actions.
     /// The next item countdown only runs while its button is visible.
     var isPresentingActions: (@MainActor () -> Bool)?
@@ -57,7 +73,11 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
     }
 
     private let itemID: String?
-    private var segments: [MediaSegmentDto] = []
+    private let baseItem: BaseItemDto
+    private(set) var segments: [MediaSegmentDto] = []
+    private var isLoaded = false
+    private var noticedSegmentIDs: Set<String> = []
+    private var noticeTask: Task<Void, Never>?
     private var lastSeconds: Duration?
     private var dismissedSegmentIDs: Set<String> = []
     private var autoSkippedSegmentIDs: Set<String> = []
@@ -66,6 +86,7 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
 
     init(item: MediaPlayerItem) {
         self.itemID = item.baseItem.id
+        self.baseItem = item.baseItem
         super.init()
 
         fetchSegments()
@@ -73,6 +94,7 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
 
     deinit {
         countdownTask?.cancel()
+        noticeTask?.cancel()
     }
 
     private func setup(with manager: MediaPlayerManager) {
@@ -91,6 +113,20 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
         Task { [weak self] in
             guard let self, let client = userSession?.client else { return }
 
+            if baseItem.type == .episode, baseItem.seriesID != nil {
+                let rule = await ShowSkipRules.resolve(for: baseItem)
+                self.rule = rule
+                logger.info(
+                    "Show skip rule",
+                    metadata: [
+                        "seriesID": .string(baseItem.seriesID ?? ""),
+                        "intro": .string(rule.intro.rawValue),
+                        "credits": .string(rule.credits.rawValue),
+                        "source": .string("\(rule.source)"),
+                    ]
+                )
+            }
+
             do {
                 let request = Paths.getItemSegments(
                     itemID: itemID,
@@ -99,6 +135,7 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
                 let response = try await client.send(request)
 
                 segments = Self.deduplicated(response.value.items ?? [])
+                isLoaded = true
 
                 if let seconds = manager?.seconds {
                     secondsDidChange(seconds)
@@ -140,18 +177,39 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
         segments.first { $0.type == .outro }?.startSeconds
     }
 
+    /// Whether the show's rule is to watch the credits (no credits skip, autoplay at the real end).
+    var isWatchingCredits: Bool {
+        rule?.credits == .watch
+    }
+
+    /// Where "End of this episode" on the sleep timer stops: the credits, unless the show's
+    /// credits are watched, then the real end of the file (nil).
+    var sleepTimerStopPoint: Duration? {
+        isWatchingCredits ? nil : creditsStart
+    }
+
+    /// The segment behavior for this item; nil means the show's rule is to watch it.
+    func behavior(for type: MediaSegmentType?) -> MediaSegmentBehavior? {
+        guard let type else { return .off }
+
+        return type.behavior(with: rule)
+    }
+
     private func secondsDidChange(_ seconds: Duration) {
         defer { lastSeconds = seconds }
 
         guard isCurrentItem else {
             setActiveSegment(nil)
+            endOfFileCountdown = nil
             return
         }
+
+        updateEndOfFileCountdown(at: seconds)
 
         let segment = segments.first { segment in
             guard let start = segment.startSeconds, let end = segment.endSeconds else { return false }
 
-            return (start ..< end).contains(seconds) && segment.type?.behavior != .off
+            return (start ..< end).contains(seconds) && behavior(for: segment.type) != .off
         }
 
         guard let segment, let segmentID = segment.id else {
@@ -159,7 +217,16 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
             return
         }
 
-        if segment.type?.behavior == .autoSkip,
+        // The show's rule is to watch this segment: no button, just a short "Watching intro" chip
+        guard let behavior = behavior(for: segment.type) else {
+            setActiveSegment(nil)
+            if isNaturalEntry(into: segment, at: seconds), noticedSegmentIDs.insert(segmentID).inserted {
+                showWatchingNotice(for: segment.type)
+            }
+            return
+        }
+
+        if behavior == .autoSkip,
            !autoSkippedSegmentIDs.contains(segmentID),
            isNaturalEntry(into: segment, at: seconds)
         {
@@ -185,13 +252,48 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
         return lastSeconds <= start && seconds - lastSeconds <= Self.naturalEntryThreshold
     }
 
+    private func showWatchingNotice(for type: MediaSegmentType?) {
+        logger.info("Watching segment per the show's rule", metadata: ["type": .string(type?.rawValue ?? "")])
+        noticeTask?.cancel()
+        watchingNotice = type
+
+        noticeTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.watchingNoticeDuration)
+            guard !Task.isCancelled else { return }
+
+            self?.watchingNotice = nil
+        }
+    }
+
+    /// Credits set to Watch: the next episode countdown runs over the last seconds of the file,
+    /// and the file's natural end plays the next episode (or the sleep timer stops playback).
+    private func updateEndOfFileCountdown(at seconds: Duration) {
+        guard isWatchingCredits, canPlayNextItem,
+              let runtime = manager?.item.runtime, runtime > .zero
+        else {
+            if endOfFileCountdown != nil {
+                endOfFileCountdown = nil
+            }
+            return
+        }
+
+        let remaining = (runtime - seconds).seconds
+        let newValue: Int? = remaining > 0 && remaining <= Double(Self.nextEpisodeCountdown)
+            ? Int(remaining.rounded(.up))
+            : nil
+
+        if newValue != endOfFileCountdown {
+            endOfFileCountdown = newValue
+        }
+    }
+
     private func setActiveSegment(_ segment: MediaSegmentDto?) {
         guard segment?.id != activeSegment?.id else { return }
 
         activeSegment = segment
         stopCountdown()
 
-        if segment?.type == .outro, canPlayNextItem {
+        if segment?.type == .outro, canPlayNextItem, behavior(for: .outro) != nil {
             startCountdown()
         }
     }
@@ -232,6 +334,40 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
         setActiveSegment(nil)
     }
 
+    // MARK: - Home preview
+
+    enum PreviewAction: Equatable {
+        /// Jump past a skipped segment
+        case seek(Duration)
+        /// The credits are skipped: end the preview here
+        case stop
+    }
+
+    private var previewSkippedSegmentIDs: Set<String> = []
+
+    /// What the Home preview (which has no buttons) does at `seconds`: it jumps past segments the
+    /// show skips and ends at credits it skips. Watched segments play.
+    func previewAction(at seconds: Duration) -> PreviewAction? {
+        guard isLoaded else { return nil }
+
+        let segment = segments.first { segment in
+            guard let start = segment.startSeconds, let end = segment.endSeconds else { return false }
+
+            return (start ..< end).contains(seconds)
+        }
+
+        guard let segment, let segmentID = segment.id, let end = segment.endSeconds else { return nil }
+        guard let behavior = behavior(for: segment.type), behavior != .off else { return nil }
+
+        if segment.type == .outro {
+            return .stop
+        }
+
+        guard previewSkippedSegmentIDs.insert(segmentID).inserted else { return nil }
+
+        return .seek(end)
+    }
+
     // MARK: - Next item countdown
 
     private func startCountdown() {
@@ -263,6 +399,21 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
     // MARK: - Overlay actions
 
     var overlayActions: [VideoPlayerOverlayAction] {
+        if let endOfFileCountdown {
+            let subtitle = manager?.queue?.nextItem?.item.playerEpisodeLocator.map { L10n.upNextEpisode($0) }
+
+            return [
+                VideoPlayerOverlayAction(
+                    id: "endOfFile",
+                    title: L10n.nextEpisodeIn(endOfFileCountdown.description),
+                    systemImage: "forward.end.fill",
+                    subtitle: subtitle
+                ) { [weak self] in
+                    self?.playNextItem()
+                },
+            ]
+        }
+
         guard let segment = activeSegment, let type = segment.type, let segmentID = segment.id else { return [] }
 
         if type == .outro, canPlayNextItem {

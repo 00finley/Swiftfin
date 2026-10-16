@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import JellyfinAPI
 import SwiftUI
 
 extension VideoPlayer {
@@ -37,6 +38,7 @@ extension VideoPlayer {
                 #endif
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
+            .animation(.easeInOut(duration: 0.35), value: viewState.segmentWatchingNotice)
             #if os(tvOS)
             .focusSection()
             .onMoveCommand { direction in
@@ -64,6 +66,11 @@ extension VideoPlayer {
                 : AnyLayout(VStackLayout(alignment: .trailing, spacing: 12))
 
             return layout {
+                if let notice = viewState.segmentWatchingNotice {
+                    WatchingNoticeChip(type: notice)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                }
+
                 ForEach(actions) { action in
                     switch action.button.style {
                     case .button:
@@ -104,6 +111,32 @@ extension VideoPlayer {
                     }
                 }
             }
+        }
+    }
+
+    /// "Watching intro": a small glass chip in place of the skip button when the show's rule is to
+    /// watch that segment. Not focusable; it fades out on its own.
+    private struct WatchingNoticeChip: View {
+
+        let type: MediaSegmentType
+
+        private var title: String {
+            type == .outro ? L10n.watchingCredits : L10n.watchingIntro
+        }
+
+        var body: some View {
+            Label(title, systemImage: "eye")
+                .font(.callout)
+                .fontWeight(.medium)
+                .foregroundStyle(.white)
+                .symbolRenderingMode(.hierarchical)
+                .lineLimit(1)
+                .padding(.horizontal, UIDevice.isTV ? 28 : 16)
+                .padding(.vertical, UIDevice.isTV ? 14 : 8)
+                .backport
+                .glassEffect(.regular, in: .capsule)
+                .background(Color.black.opacity(0.3), in: Capsule())
+                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
