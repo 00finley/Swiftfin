@@ -11,6 +11,12 @@ import SwiftUI
 extension VideoPlayer.PlaybackControls {
 
     func handlePressEvent(_ press: VideoPlayer.UIContainerViewController.PressEvent) {
+        // Channels: Right skips to the next episode and Down shows what's playing while the bar is hidden
+        if viewState.pressInterceptor?(press.type, press.phase) == true {
+            press.resolve(.handled)
+            return
+        }
+
         let isSeekPress = press.type == .leftArrow || press.type == .rightArrow
 
         if isSeekPress, viewState.isOverlayActionFocused {

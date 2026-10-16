@@ -1008,6 +1008,11 @@ extension VideoPlayer {
         }
 
         private func handleSelectEnded(_ press: UIPress, event: UIPressesEvent?) {
+            // Channels: Select on the Up Next card plays it now
+            if viewState.pressInterceptor?(.select, .ended) == true {
+                return
+            }
+
             if viewState.isOverlayActionFocused {
                 forwardPressesEnded([press], event: event)
                 return
@@ -1037,6 +1042,11 @@ extension VideoPlayer {
         private func handleMenuEnded() {
             // Let a system menu or alert consume Back before dismissing player UI.
             guard !viewState.isFocusOutsidePlayer || viewState.presentation == .hidden else { return }
+
+            // Channels: Back dismisses the Up Next card and lets the episode play out
+            if viewState.pressInterceptor?(.menu, .ended) == true {
+                return
+            }
 
             if viewState.isScrubbing {
                 viewState.cancelScrub()
