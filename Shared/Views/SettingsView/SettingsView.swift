@@ -135,6 +135,10 @@ struct SettingsView: View {
                     router.route(to: .discoverSettings)
                 }
             }
+
+            ChevronButton(L10n.yearInGlassfin) {
+                router.route(to: .yearInGlassfin)
+            }
             #endif
 
             ChevronButton(L10n.advanced) {

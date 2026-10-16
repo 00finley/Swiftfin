@@ -15,4 +15,10 @@ PRODUCT_BUNDLE_IDENTIFIER = org.jellyfin.swiftfin
 // Set it in the git-ignored DevelopmentTeam.xcconfig.
 DISCOVER_SEED_TITLES =
 
+// glassfin-helper (tvOS): the Mac service for Coming This Week (Sonarr's calendar) and Ask Glassfin.
+// GLASSFIN_HELPER_URL is host:port without "http://" (xcconfig treats "//" as a comment); the app adds the scheme.
+// Set both in the git-ignored DevelopmentTeam.xcconfig.
+GLASSFIN_HELPER_URL =
+GLASSFIN_HELPER_TOKEN =
+
 #include? "DevelopmentTeam.xcconfig"

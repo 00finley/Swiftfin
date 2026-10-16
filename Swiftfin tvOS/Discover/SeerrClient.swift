@@ -163,14 +163,118 @@ actor SeerrClient {
 
     func clearCache() {
         cache = [:]
+        requesterIDs = [:]
+    }
+
+    // MARK: - Requests
+
+    /// One of the user's requests whose media has arrived (Home's Ready to Watch).
+    struct AvailableRequest: Identifiable, Hashable {
+        let id: Int
+        let kind: DiscoverTitle.Kind
+        let tmdbID: Int
+        let isPartial: Bool
+        /// When the media became available (`media.mediaAddedAt`, else the request's last update)
+        let availableAt: Date?
+        /// Seerr's own link to the Jellyfin item, when it has one
+        let jellyfinMediaID: String?
+
+        var key: String {
+            "\(kind.rawValue)-\(tmdbID)"
+        }
+    }
+
+    /// Seerr user ids keyed by Jellyfin user id.
+    private var requesterIDs: [String: Int] = [:]
+
+    /// The Seerr user linked to this Jellyfin user (`jellyfinUserId`), else the API key's own user.
+    private func requesterID(jellyfinUserID: String) async throws -> Int? {
+        let wanted = Self.normalizedJellyfinID(jellyfinUserID)
+        if let id = requesterIDs[wanted] {
+            return id
+        }
+
+        let users = try? await JSONDecoder().decode(
+            UserPage.self,
+            from: send("GET", path: "user", query: ["take": "200"])
+        )
+        var id = users?.results.first { $0.jellyfinUserId.map(Self.normalizedJellyfinID) == wanted }?.id
+        if id == nil {
+            id = try? await JSONDecoder().decode(SeerrUser.self, from: send("GET", path: "auth/me")).id
+        }
+        if let id {
+            requesterIDs[wanted] = id
+        }
+        return id
+    }
+
+    /// `GET /api/v1/request`: this user's requests that are available or partially available, newest first.
+    func availableRequests(jellyfinUserID: String) async throws -> [AvailableRequest] {
+        let requester = try await requesterID(jellyfinUserID: jellyfinUserID)
+
+        var query = ["take": "100", "skip": "0", "sort": "modified", "filter": "all"]
+        if let requester {
+            query["requestedBy"] = String(requester)
+        }
+        let data = try await send("GET", path: "request", query: query)
+        let page = try JSONDecoder().decode(RequestPage.self, from: data)
+
+        var seen = Set<String>()
+        return page.results
+            .filter { request in
+                // Older servers ignore `requestedBy`; check it here too
+                guard let requester, let by = request.requestedBy?.id else { return true }
+
+                return by == requester
+            }
+            .compactMap { request -> AvailableRequest? in
+                guard let media = request.media, let tmdbID = media.tmdbId,
+                      media.status == 4 || media.status == 5
+                else { return nil }
+
+                let kind: DiscoverTitle.Kind = (request.type ?? media.mediaType) == "movie" ? .movie : .tv
+                let availableAt = Self.date(media.mediaAddedAt) ?? Self.date(request.updatedAt) ?? Self.date(request.createdAt)
+                return AvailableRequest(
+                    id: request.id,
+                    kind: kind,
+                    tmdbID: tmdbID,
+                    isPartial: media.status == 4,
+                    availableAt: availableAt,
+                    jellyfinMediaID: media.jellyfinMediaId
+                )
+            }
+            .sorted { ($0.availableAt ?? .distantPast) > ($1.availableAt ?? .distantPast) }
+            .filter { seen.insert($0.key).inserted }
+    }
+
+    private static func normalizedJellyfinID(_ id: String) -> String {
+        id.replacing("-", with: "").lowercased()
+    }
+
+    private static func date(_ text: String?) -> Date? {
+        guard let text else { return nil }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: text) {
+            return date
+        }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: text)
     }
 
     // MARK: - Transport
 
-    private func send(_ method: String, path: String, body: [String: Any]? = nil) async throws -> Data {
+    private func send(_ method: String, path: String, query: [String: String] = [:], body: [String: Any]? = nil) async throws -> Data {
         guard let configuration = Self.configuration else { throw SeerrError.notConfigured }
 
-        var request = URLRequest(url: configuration.baseURL.appendingPathComponent("api/v1/\(path)"), timeoutInterval: 12)
+        var url = configuration.baseURL.appendingPathComponent("api/v1/\(path)")
+        if query.isNotEmpty, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            components.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
+            url = components.url ?? url
+        }
+
+        var request = URLRequest(url: url, timeoutInterval: 12)
         request.httpMethod = method
         request.setValue(configuration.apiKey, forHTTPHeaderField: "X-Api-Key")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -214,6 +318,43 @@ actor SeerrClient {
     private struct MediaRequest: Decodable {
         /// 1 pending approval, 2 approved, 3 declined
         let status: Int?
+    }
+
+    private struct SeerrUser: Decodable {
+        let id: Int
+        let jellyfinUserId: String?
+    }
+
+    private struct UserPage: Decodable {
+        let results: [SeerrUser]
+    }
+
+    private struct RequestPage: Decodable {
+        let results: [UserMediaRequest]
+    }
+
+    /// A row of `GET /api/v1/request`.
+    private struct UserMediaRequest: Decodable {
+
+        struct Media: Decodable {
+            let tmdbId: Int?
+            let mediaType: String?
+            /// 1 unknown, 2 pending, 3 processing, 4 partially available, 5 available
+            let status: Int?
+            let mediaAddedAt: String?
+            let jellyfinMediaId: String?
+        }
+
+        struct Requester: Decodable {
+            let id: Int?
+        }
+
+        let id: Int
+        let type: String?
+        let createdAt: String?
+        let updatedAt: String?
+        let media: Media?
+        let requestedBy: Requester?
     }
 
     private static func status(from info: MediaInfo?) -> SeerrStatus {
