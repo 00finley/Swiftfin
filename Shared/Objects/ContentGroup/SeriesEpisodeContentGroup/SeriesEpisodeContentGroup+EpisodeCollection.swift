@@ -135,6 +135,20 @@ extension SeriesEpisodeContentGroup {
         @StateObject
         private var proxy = CollectionHStackProxy()
 
+        /// The cards are hosted in UIKit cells, so SwiftUI's default focus can't steer focus into the
+        /// row; the focus engine picks the card nearest the buttons above (usually episode 1). Until
+        /// the row has been focused once, only the preferred episode is focusable.
+        @State
+        private var hasFocusedRow = false
+
+        private func isFocusable(_ element: EpisodeElement) -> Bool {
+            #if os(tvOS)
+            hasFocusedRow || preferredElementID == nil || element.id == preferredElementID
+            #else
+            true
+            #endif
+        }
+
         let elements: [EpisodeElement]
         let preferredElementID: EpisodeElement.ID?
         let header: Header
@@ -182,6 +196,7 @@ extension SeriesEpisodeContentGroup {
                     layout: Self.layout
                 ) { element in
                     content(element)
+                        .disabled(!isFocusable(element))
                         .focused($focusedElement, equals: element.id)
                         #if os(tvOS)
                         .ignoresSafeArea()
@@ -195,6 +210,11 @@ extension SeriesEpisodeContentGroup {
                 .scrollBehavior(.continuousLeadingEdge)
                 .focusSection()
                 .focused($focusedSection, equals: .episodes)
+                .onChange(of: focusedElement) { _, newValue in
+                    if newValue != nil {
+                        hasFocusedRow = true
+                    }
+                }
                 .defaultFocus(
                     $focusedElement,
                     preferredElementID,

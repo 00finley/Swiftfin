@@ -17,6 +17,12 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
     @FocusState
     private var isSectionFocused
 
+    /// The screen's initial focus lands on the first focusable view, which would be the hero's
+    /// button. Keep the hero out of focus until the row has been focused once, so Home opens on
+    /// the first card; pressing up from the row reaches the button as usual afterwards.
+    @State
+    private var isTopContentFocusable = false
+
     @FocusedValue(\.focusedPoster)
     private var focusedPoster
 
@@ -56,6 +62,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
         guard isSectionFocused, let focusedPoster else { return }
 
         selectedPoster = focusedPoster
+        isTopContentFocusable = true
     }
 
     var body: some View {
@@ -66,6 +73,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                     topContent(selectedItem)
                         .id(selectedItem.hashValue)
                         .transition(.opacity)
+                        .disabled(!isTopContentFocusable)
                 }
 
                 if let title {
@@ -74,7 +82,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(.white.opacity(0.9))
                         .edgePadding(.leading)
-                        .padding(.top, 24)
+                        .padding(.top, 64)
                 }
 
                 // TODO: fix intrinsic content sizing without frame
@@ -86,6 +94,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                     action(item)
                 }
                 .frame(height: 400)
+                .focusSection()
             }
         }
         .background(alignment: .top) {
