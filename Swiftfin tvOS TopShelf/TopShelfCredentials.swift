@@ -63,16 +63,19 @@ enum TopShelfCredentials {
     }
 
     static func load() -> Session? {
+        loadWithStatus().session
+    }
+
+    static func loadWithStatus() -> (session: Session?, status: OSStatus) {
         var query = baseQuery
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
         var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data
-        else { return nil }
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data else { return (nil, status) }
 
-        return try? JSONDecoder().decode(Session.self, from: data)
+        return (try? JSONDecoder().decode(Session.self, from: data), status)
     }
 
     static func clear() {

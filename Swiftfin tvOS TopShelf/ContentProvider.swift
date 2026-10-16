@@ -20,8 +20,9 @@ final class ContentProvider: TVTopShelfContentProvider {
         var log = ["\(Date.now.formatted(date: .abbreviated, time: .standard))"]
         defer { TopShelfCredentials.saveDiagnostics(log.joined(separator: " | ")) }
 
-        guard let session = TopShelfCredentials.load() else {
-            log.append("no credentials in shared keychain")
+        let (loaded, keychainStatus) = TopShelfCredentials.loadWithStatus()
+        guard let session = loaded else {
+            log.append("no credentials in shared keychain (OSStatus \(keychainStatus))")
             return nil
         }
 
@@ -38,9 +39,17 @@ final class ContentProvider: TVTopShelfContentProvider {
         let (latest, latestNote) = await latestResult
         log.append("resume \(resumeNote), nextUp \(nextUpNote), latest \(latestNote)")
 
+        // One entry per show: the most recently started episode, else that show's Next Up episode
+        let inProgress = (resume ?? []).sorted { ($0.UserData?.LastPlayedDate ?? "") > ($1.UserData?.LastPlayedDate ?? "") }
         var seen = Set<String>()
-        let upNext = await ((resume ?? []) + (nextUp ?? []))
-            .filter { seen.insert($0.Id).inserted }
+        var seenSeries = Set<String>()
+        let upNext = (inProgress + (nextUp ?? []))
+            .filter { item in
+                guard seen.insert(item.Id).inserted else { return false }
+                guard let series = item.SeriesId else { return true }
+
+                return seenSeries.insert(series).inserted
+            }
             .prefix(upNextLimit)
 
         var sections: [TVTopShelfItemCollection<TVTopShelfSectionedItem>] = []

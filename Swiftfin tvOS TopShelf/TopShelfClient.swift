@@ -16,6 +16,7 @@ struct TopShelfClient {
 
         struct UserData: Decodable, Hashable {
             let PlayedPercentage: Double?
+            let LastPlayedDate: String?
         }
 
         let Id: String

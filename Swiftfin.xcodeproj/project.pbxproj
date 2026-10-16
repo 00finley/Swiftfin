@@ -121,8 +121,8 @@
 		E1C5CB822EF61A650047C249 /* StatefulMacros in Frameworks */ = {isa = PBXBuildFile; productRef = E1C5CB812EF61A650047C249 /* StatefulMacros */; };
 		E1DC9814296DC06200982F06 /* PulseLogHandler in Frameworks */ = {isa = PBXBuildFile; productRef = E1DC9813296DC06200982F06 /* PulseLogHandler */; };
 		E1E2D7BF2E3FD936004E2E5F /* Transmission in Frameworks */ = {isa = PBXBuildFile; productRef = E1E2D7BE2E3FD936004E2E5F /* Transmission */; };
-		E1FADDF12E84B63600FB310E /* StatefulMacros in Frameworks */ = {isa = PBXBuildFile; productRef = E1FADDF02E84B63600FB310E /* StatefulMacros */; };
 		E1F0C0DE0000A11CE000000E /* TopShelf.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E1F0C0DE0000A11CE0000000 /* TopShelf.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E1FADDF12E84B63600FB310E /* StatefulMacros in Frameworks */ = {isa = PBXBuildFile; productRef = E1FADDF02E84B63600FB310E /* StatefulMacros */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -233,7 +233,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Resources/Info.plist,
-				Resources/Swiftfin.entitlements,
 			);
 			target = 5358705F2669D21600D05A09 /* Swiftfin tvOS */;
 		};
@@ -257,7 +256,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				TopShelf.entitlements,
 			);
 			target = E1F0C0DE0000A11CE0000004 /* Swiftfin tvOS TopShelf */;
 		};
@@ -277,7 +275,7 @@
 		E145669F2DFCAEFD008FF700 /* Swiftfin tvOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E14567272DFCAEFD008FF700 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "Swiftfin tvOS"; sourceTree = "<group>"; };
 		E1456FC82DFCB323008FF700 /* Translations */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Translations; sourceTree = "<group>"; };
 		E150B7D12DFF2E7C00DC7CF4 /* XcodeConfig */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1BE3EDA2FE9DAE800327990 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, E1BE3EDB2FE9DAE800327990 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = XcodeConfig; sourceTree = "<group>"; };
-		E1F0C0DE0000A11CE0000001 /* Swiftfin tvOS TopShelf */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1F0C0DE0000A11CE0000002 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, E1F0C0DE0000A11CE0000003 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "Swiftfin tvOS TopShelf"; sourceTree = "<group>"; };
+		E1F0C0DE0000A11CE0000001 /* Swiftfin tvOS TopShelf */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1F0C0DE0000A11CE0000003 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, E1F0C0DE0000A11CE0000002 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "Swiftfin tvOS TopShelf"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -675,14 +673,14 @@
 				LastSwiftUpdateCheck = 1250;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
-					E1F0C0DE0000A11CE0000004 = {
-						CreatedOnToolsVersion = 26.0;
-					};
 					5358705F2669D21600D05A09 = {
 						CreatedOnToolsVersion = 12.5;
 					};
 					5377CBF0263B596A003A4E83 = {
 						CreatedOnToolsVersion = 12.5;
+					};
+					E1F0C0DE0000A11CE0000004 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -747,6 +745,7 @@
 				gl,
 				ka,
 				ml,
+				af,
 			);
 			mainGroup = 5377CBE8263B596A003A4E83;
 			packageReferences = (
@@ -1006,11 +1005,11 @@
 			baseConfigurationReferenceAnchor = E150B7D12DFF2E7C00DC7CF4 /* XcodeConfig */;
 			baseConfigurationReferenceRelativePath = Shared.xcconfig;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Swiftfin tvOS/Resources/Swiftfin.entitlements";
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-dark-jellyfin AppIcon-dark-green AppIcon-dark-orange AppIcon-dark-red AppIcon-dark-yellow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Swiftfin tvOS/Resources/Swiftfin.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 70;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -1038,11 +1037,11 @@
 			baseConfigurationReferenceAnchor = E150B7D12DFF2E7C00DC7CF4 /* XcodeConfig */;
 			baseConfigurationReferenceRelativePath = Shared.xcconfig;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Swiftfin tvOS/Resources/Swiftfin.entitlements";
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-dark-jellyfin AppIcon-dark-green AppIcon-dark-orange AppIcon-dark-red AppIcon-dark-yellow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Swiftfin tvOS/Resources/Swiftfin.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 70;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -1292,6 +1291,11 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.4.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-e",
+					_NSExtensionMain,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).topshelf";
 				PRODUCT_NAME = TopShelf;
 				SDKROOT = appletvos;
@@ -1322,6 +1326,11 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.4.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-e",
+					_NSExtensionMain,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).topshelf";
 				PRODUCT_NAME = TopShelf;
 				SDKROOT = appletvos;
