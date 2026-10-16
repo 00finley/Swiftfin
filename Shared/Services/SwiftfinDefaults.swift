@@ -279,6 +279,18 @@ extension Defaults.Keys {
             UserKey("jumpForwardLength", default: .fifteen)
         }
 
+        /// Netflix-style previews of the focused Up Next episode on Home (tvOS).
+        enum HomePreviews {
+
+            static var autoplay: Key<Bool> {
+                UserKey("homePreviewAutoplay", default: true)
+            }
+
+            static var sound: Key<Bool> {
+                UserKey("homePreviewSound", default: true)
+            }
+        }
+
         /// What to do when playback enters each kind of media segment (intro, credits, ...).
         enum MediaSegments {
 
