@@ -81,6 +81,23 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
             #endif
         }
 
+        #if os(tvOS)
+        // Glassfin Home rows (each hides itself when it has nothing to show)
+        if SeerrClient.isConfigured {
+            ReadyToWatchContentGroup()
+        }
+
+        PlaySomethingContentGroup()
+
+        if GlassfinHelperClient.isConfigured {
+            ComingThisWeekContentGroup()
+        }
+
+        if YearInGlassfin.isFeatured() {
+            YearInGlassfinContentGroup(isFeatured: true)
+        }
+        #endif
+
         if Defaults[.Customization.Home.showRecentlyPlayed] {
             PosterGroup(
                 library: ItemLibrary(
@@ -115,6 +132,10 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
         // Discover rows (TMDB) below the library rows; loads on its own, never blocks Home
         if TMDBClient.isAvailable {
             DiscoverHomeContentGroup()
+        }
+
+        if !YearInGlassfin.isFeatured() {
+            YearInGlassfinContentGroup(isFeatured: false)
         }
         #endif
     }

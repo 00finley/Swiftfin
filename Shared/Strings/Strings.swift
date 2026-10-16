@@ -424,6 +424,8 @@ internal enum L10n {
   internal static func columnsWithCount(_ p1: Any) -> String {
     return L10n.tr("Localizable", "columnsWithCount", String(describing: p1), fallback: "Columns: %@")
   }
+  /// Coming This Week
+  internal static let comingThisWeek = L10n.tr("Localizable", "comingThisWeek", fallback: "Coming This Week")
   /// Commercials
   internal static let commercials = L10n.tr("Localizable", "commercials", fallback: "Commercials")
   /// Community
@@ -970,6 +972,8 @@ internal enum L10n {
   internal static let gesturesUnlocked = L10n.tr("Localizable", "gesturesUnlocked", fallback: "Gestures unlocked")
   /// Gbps
   internal static let gigabitsPerSecond = L10n.tr("Localizable", "gigabitsPerSecond", fallback: "Gbps")
+  /// Glassfin Helper isn't available right now.
+  internal static let glassfinHelperUnavailable = L10n.tr("Localizable", "glassfinHelperUnavailable", fallback: "Glassfin Helper isn\'t available right now.")
   /// Go to item
   internal static let goToItem = L10n.tr("Localizable", "goToItem", fallback: "Go to item")
   /// Go to series
@@ -1002,6 +1006,10 @@ internal enum L10n {
   internal static let hint = L10n.tr("Localizable", "hint", fallback: "Hint")
   /// Home
   internal static let home = L10n.tr("Localizable", "home", fallback: "Home")
+  /// New
+  internal static let homeNewBadge = L10n.tr("Localizable", "homeNewBadge", fallback: "New")
+  /// Ready
+  internal static let homeReadyBadge = L10n.tr("Localizable", "homeReadyBadge", fallback: "Ready")
   /// Horizontal pan
   internal static let horizontalPan = L10n.tr("Localizable", "horizontalPan", fallback: "Horizontal pan")
   /// Horizontal swipe
@@ -1486,6 +1494,32 @@ internal enum L10n {
   internal static let playNextItem = L10n.tr("Localizable", "playNextItem", fallback: "Play next item")
   /// Play previous item
   internal static let playPreviousItem = L10n.tr("Localizable", "playPreviousItem", fallback: "Play previous item")
+  /// Play Something
+  internal static let playSomething = L10n.tr("Localizable", "playSomething", fallback: "Play Something")
+  /// One press: something from your Next Up, a show you love, or a movie you haven't seen
+  internal static let playSomethingCaption = L10n.tr("Localizable", "playSomethingCaption", fallback: "One press: something from your Next Up, a show you love, or a movie you haven\'t seen")
+  /// Picks something you'll probably like and starts it
+  internal static let playSomethingHint = L10n.tr("Localizable", "playSomethingHint", fallback: "Picks something you\'ll probably like and starts it")
+  /// How About
+  internal static let playSomethingHowAbout = L10n.tr("Localizable", "playSomethingHowAbout", fallback: "How About")
+  /// Not in your library yet. Opens in Discover so you can request it.
+  internal static let playSomethingOpensInDiscover = L10n.tr("Localizable", "playSomethingOpensInDiscover", fallback: "Not in your library yet. Opens in Discover so you can request it.")
+  /// Playing
+  internal static let playSomethingPlaying = L10n.tr("Localizable", "playSomethingPlaying", fallback: "Playing")
+  /// Picked for you from Discover
+  internal static let playSomethingReasonDiscover = L10n.tr("Localizable", "playSomethingReasonDiscover", fallback: "Picked for you from Discover")
+  /// You liked this one
+  internal static let playSomethingReasonLiked = L10n.tr("Localizable", "playSomethingReasonLiked", fallback: "You liked this one")
+  /// You loved this one
+  internal static let playSomethingReasonLoved = L10n.tr("Localizable", "playSomethingReasonLoved", fallback: "You loved this one")
+  /// An unwatched movie from your library
+  internal static let playSomethingReasonMovie = L10n.tr("Localizable", "playSomethingReasonMovie", fallback: "An unwatched movie from your library")
+  /// Up next for you
+  internal static let playSomethingReasonNextUp = L10n.tr("Localizable", "playSomethingReasonNextUp", fallback: "Up next for you")
+  /// Pick up where you left off
+  internal static let playSomethingReasonResume = L10n.tr("Localizable", "playSomethingReasonResume", fallback: "Pick up where you left off")
+  /// Shuffle Again
+  internal static let playSomethingShuffleAgain = L10n.tr("Localizable", "playSomethingShuffleAgain", fallback: "Shuffle Again")
   /// Portrait
   internal static let portrait = L10n.tr("Localizable", "portrait", fallback: "Portrait")
   /// Community rating: %1$@ out of 10 - Spoken community rating on a scale of ten.
@@ -1624,6 +1658,8 @@ internal enum L10n {
   internal static let rating = L10n.tr("Localizable", "rating", fallback: "Rating")
   /// Ratings
   internal static let ratings = L10n.tr("Localizable", "ratings", fallback: "Ratings")
+  /// Ready to Watch
+  internal static let readyToWatch = L10n.tr("Localizable", "readyToWatch", fallback: "Ready to Watch")
   /// Real Frame Rate
   internal static let realFrameRate = L10n.tr("Localizable", "realFrameRate", fallback: "Real Frame Rate")
   /// Recap
@@ -2116,6 +2152,10 @@ internal enum L10n {
   internal static let timestamp = L10n.tr("Localizable", "timestamp", fallback: "Timestamp")
   /// Title
   internal static let title = L10n.tr("Localizable", "title", fallback: "Title")
+  /// Today
+  internal static let today = L10n.tr("Localizable", "today", fallback: "Today")
+  /// Tomorrow
+  internal static let tomorrow = L10n.tr("Localizable", "tomorrow", fallback: "Tomorrow")
   /// Total time
   internal static let totalTime = L10n.tr("Localizable", "totalTime", fallback: "Total time")
   /// Tracks
@@ -2304,6 +2344,178 @@ internal enum L10n {
   internal static let writer = L10n.tr("Localizable", "writer", fallback: "Writer")
   /// Year
   internal static let year = L10n.tr("Localizable", "year", fallback: "Year")
+  /// Your Year in Glassfin
+  internal static let yearInGlassfin = L10n.tr("Localizable", "yearInGlassfin", fallback: "Your Year in Glassfin")
+  /// Your top shows, hours watched, longest binge and your Glassfin persona
+  internal static let yearInGlassfinBannerSubtitle = L10n.tr("Localizable", "yearInGlassfinBannerSubtitle", fallback: "Your top shows, hours watched, longest binge and your Glassfin persona")
+  /// When You Watched
+  internal static let yearInGlassfinBusiest = L10n.tr("Localizable", "yearInGlassfinBusiest", fallback: "When You Watched")
+  /// %@ days
+  internal static func yearInGlassfinDays(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinDays", String(describing: p1), fallback: "%@ days")
+  }
+  /// Nothing watched yet this year. Come back after a few episodes.
+  internal static let yearInGlassfinEmpty = L10n.tr("Localizable", "yearInGlassfinEmpty", fallback: "Nothing watched yet this year. Come back after a few episodes.")
+  /// %d episodes
+  internal static func yearInGlassfinEpisodeCount(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinEpisodeCount", p1, fallback: "%d episodes")
+  }
+  /// Estimated from what you finished. Playback Reporting on the server makes this exact.
+  internal static let yearInGlassfinEstimated = L10n.tr("Localizable", "yearInGlassfinEstimated", fallback: "Estimated from what you finished. Playback Reporting on the server makes this exact.")
+  /// Estimated
+  internal static let yearInGlassfinEstimatedShort = L10n.tr("Localizable", "yearInGlassfinEstimatedShort", fallback: "Estimated")
+  /// Your year couldn't be loaded.
+  internal static let yearInGlassfinFailed = L10n.tr("Localizable", "yearInGlassfinFailed", fallback: "Your year couldn\'t be loaded.")
+  /// Your favorite day to watch: %@
+  internal static func yearInGlassfinFavoriteDay(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinFavoriteDay", String(describing: p1), fallback: "Your favorite day to watch: %@")
+  }
+  /// Your Favorites
+  internal static let yearInGlassfinFavorites = L10n.tr("Localizable", "yearInGlassfinFavorites", fallback: "Your Favorites")
+  /// Your Genres
+  internal static let yearInGlassfinGenres = L10n.tr("Localizable", "yearInGlassfinGenres", fallback: "Your Genres")
+  /// %d hours
+  internal static func yearInGlassfinHours(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinHours", p1, fallback: "%d hours")
+  }
+  /// A look back at what you watched this year
+  internal static let yearInGlassfinIntro = L10n.tr("Localizable", "yearInGlassfinIntro", fallback: "A look back at what you watched this year")
+  /// It's Here
+  internal static let yearInGlassfinItsHere = L10n.tr("Localizable", "yearInGlassfinItsHere", fallback: "It\'s Here")
+  /// Your Longest Binge
+  internal static let yearInGlassfinLongestBinge = L10n.tr("Localizable", "yearInGlassfinLongestBinge", fallback: "Your Longest Binge")
+  /// Press Menu to close
+  internal static let yearInGlassfinMenuToClose = L10n.tr("Localizable", "yearInGlassfinMenuToClose", fallback: "Press Menu to close")
+  /// %@ was your month
+  internal static func yearInGlassfinMonthWasYours(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinMonthWasYours", String(describing: p1), fallback: "%@ was your month")
+  }
+  /// %d movies
+  internal static func yearInGlassfinMovieCount(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinMovieCount", p1, fallback: "%d movies")
+  }
+  /// 1 episode
+  internal static let yearInGlassfinOneEpisode = L10n.tr("Localizable", "yearInGlassfinOneEpisode", fallback: "1 episode")
+  /// 1 hour
+  internal static let yearInGlassfinOneHour = L10n.tr("Localizable", "yearInGlassfinOneHour", fallback: "1 hour")
+  /// 1 movie
+  internal static let yearInGlassfinOneMovie = L10n.tr("Localizable", "yearInGlassfinOneMovie", fallback: "1 movie")
+  /// On Repeat
+  internal static let yearInGlassfinOnRepeat = L10n.tr("Localizable", "yearInGlassfinOnRepeat", fallback: "On Repeat")
+  /// Your Glassfin Persona
+  internal static let yearInGlassfinPersona = L10n.tr("Localizable", "yearInGlassfinPersona", fallback: "Your Glassfin Persona")
+  /// Your most-played episode this year.
+  internal static let yearInGlassfinPlayedMost = L10n.tr("Localizable", "yearInGlassfinPlayedMost", fallback: "Your most-played episode this year.")
+  /// You played it %d times.
+  internal static func yearInGlassfinPlayedTimes(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinPlayedTimes", p1, fallback: "You played it %d times.")
+  }
+  /// Longest Binge
+  internal static let yearInGlassfinSummaryBinge = L10n.tr("Localizable", "yearInGlassfinSummaryBinge", fallback: "Longest Binge")
+  /// Busiest Month
+  internal static let yearInGlassfinSummaryBusiestMonth = L10n.tr("Localizable", "yearInGlassfinSummaryBusiestMonth", fallback: "Busiest Month")
+  /// Favorite
+  internal static let yearInGlassfinSummaryFavorite = L10n.tr("Localizable", "yearInGlassfinSummaryFavorite", fallback: "Favorite")
+  /// Watched
+  internal static let yearInGlassfinSummaryHours = L10n.tr("Localizable", "yearInGlassfinSummaryHours", fallback: "Watched")
+  /// Top Genre
+  internal static let yearInGlassfinSummaryTopGenre = L10n.tr("Localizable", "yearInGlassfinSummaryTopGenre", fallback: "Top Genre")
+  /// Top Show
+  internal static let yearInGlassfinSummaryTopShow = L10n.tr("Localizable", "yearInGlassfinSummaryTopShow", fallback: "Top Show")
+  /// Swipe right for more
+  internal static let yearInGlassfinSwipeHint = L10n.tr("Localizable", "yearInGlassfinSwipeHint", fallback: "Swipe right for more")
+  /// Your Top Shows
+  internal static let yearInGlassfinTopShows = L10n.tr("Localizable", "yearInGlassfinTopShows", fallback: "Your Top Shows")
+  /// Your %@ in Glassfin
+  internal static func yearInGlassfinYour(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "yearInGlassfinYour", String(describing: p1), fallback: "Your %@ in Glassfin")
+  }
+  /// You Watched
+  internal static let yearInGlassfinYouWatched = L10n.tr("Localizable", "yearInGlassfinYouWatched", fallback: "You Watched")
+  /// Thrill Seeker
+  internal static let yearPersonaAction = L10n.tr("Localizable", "yearPersonaAction", fallback: "Thrill Seeker")
+  /// Explosions, chases and cliffhangers were your thing.
+  internal static let yearPersonaActionLine = L10n.tr("Localizable", "yearPersonaActionLine", fallback: "Explosions, chases and cliffhangers were your thing.")
+  /// Cartoon Connoisseur
+  internal static let yearPersonaAnimation = L10n.tr("Localizable", "yearPersonaAnimation", fallback: "Cartoon Connoisseur")
+  /// Animation took the biggest share of your screen time.
+  internal static let yearPersonaAnimationLine = L10n.tr("Localizable", "yearPersonaAnimationLine", fallback: "Animation took the biggest share of your screen time.")
+  /// Binge-Watching
+  internal static let yearPersonaBinge = L10n.tr("Localizable", "yearPersonaBinge", fallback: "Binge-Watching")
+  /// You once watched %d episodes in a row.
+  internal static func yearPersonaBingeLine(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearPersonaBingeLine", p1, fallback: "You once watched %d episodes in a row.")
+  }
+  /// Big-Screen
+  internal static let yearPersonaCinephile = L10n.tr("Localizable", "yearPersonaCinephile", fallback: "Big-Screen")
+  /// Movies outnumbered episodes.
+  internal static let yearPersonaCinephileLine = L10n.tr("Localizable", "yearPersonaCinephileLine", fallback: "Movies outnumbered episodes.")
+  /// Sitcom Sommelier
+  internal static let yearPersonaComedy = L10n.tr("Localizable", "yearPersonaComedy", fallback: "Sitcom Sommelier")
+  /// Comedy kept you laughing more than anything else.
+  internal static let yearPersonaComedyLine = L10n.tr("Localizable", "yearPersonaComedyLine", fallback: "Comedy kept you laughing more than anything else.")
+  /// Steady
+  internal static let yearPersonaDevoted = L10n.tr("Localizable", "yearPersonaDevoted", fallback: "Steady")
+  /// You stuck with your shows, episode after episode.
+  internal static let yearPersonaDevotedLine = L10n.tr("Localizable", "yearPersonaDevotedLine", fallback: "You stuck with your shows, episode after episode.")
+  /// Curious Mind
+  internal static let yearPersonaDocumentary = L10n.tr("Localizable", "yearPersonaDocumentary", fallback: "Curious Mind")
+  /// You watched to learn something new.
+  internal static let yearPersonaDocumentaryLine = L10n.tr("Localizable", "yearPersonaDocumentaryLine", fallback: "You watched to learn something new.")
+  /// Prestige Devotee
+  internal static let yearPersonaDrama = L10n.tr("Localizable", "yearPersonaDrama", fallback: "Prestige Devotee")
+  /// Big, serious drama was your comfort zone.
+  internal static let yearPersonaDramaLine = L10n.tr("Localizable", "yearPersonaDramaLine", fallback: "Big, serious drama was your comfort zone.")
+  /// Wide-Ranging
+  internal static let yearPersonaExplorer = L10n.tr("Localizable", "yearPersonaExplorer", fallback: "Wide-Ranging")
+  /// You tried %d different shows.
+  internal static func yearPersonaExplorerLine(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "yearPersonaExplorerLine", p1, fallback: "You tried %d different shows.")
+  }
+  /// Brave Soul
+  internal static let yearPersonaHorror = L10n.tr("Localizable", "yearPersonaHorror", fallback: "Brave Soul")
+  /// Horror didn't scare you off.
+  internal static let yearPersonaHorrorLine = L10n.tr("Localizable", "yearPersonaHorrorLine", fallback: "Horror didn\'t scare you off.")
+  /// Armchair Detective
+  internal static let yearPersonaMystery = L10n.tr("Localizable", "yearPersonaMystery", fallback: "Armchair Detective")
+  /// Mysteries and crime kept you guessing.
+  internal static let yearPersonaMysteryLine = L10n.tr("Localizable", "yearPersonaMysteryLine", fallback: "Mysteries and crime kept you guessing.")
+  /// Your story starts with the next thing you watch.
+  internal static let yearPersonaNewcomerLine = L10n.tr("Localizable", "yearPersonaNewcomerLine", fallback: "Your story starts with the next thing you watch.")
+  /// The Fresh Start
+  internal static let yearPersonaNewcomerTitle = L10n.tr("Localizable", "yearPersonaNewcomerTitle", fallback: "The Fresh Start")
+  /// Night-Owl
+  internal static let yearPersonaNightOwl = L10n.tr("Localizable", "yearPersonaNightOwl", fallback: "Night-Owl")
+  /// Most of your watching happened after 10 PM.
+  internal static let yearPersonaNightOwlLine = L10n.tr("Localizable", "yearPersonaNightOwlLine", fallback: "Most of your watching happened after 10 PM.")
+  /// Cabinet Insider
+  internal static let yearPersonaPolitics = L10n.tr("Localizable", "yearPersonaPolitics", fallback: "Cabinet Insider")
+  /// Politics and power plays were your favorite drama.
+  internal static let yearPersonaPoliticsLine = L10n.tr("Localizable", "yearPersonaPoliticsLine", fallback: "Politics and power plays were your favorite drama.")
+  /// Reality Regular
+  internal static let yearPersonaReality = L10n.tr("Localizable", "yearPersonaReality", fallback: "Reality Regular")
+  /// Competitions and real people won your evenings.
+  internal static let yearPersonaRealityLine = L10n.tr("Localizable", "yearPersonaRealityLine", fallback: "Competitions and real people won your evenings.")
+  /// Hopeless Romantic
+  internal static let yearPersonaRomance = L10n.tr("Localizable", "yearPersonaRomance", fallback: "Hopeless Romantic")
+  /// Love stories won you over.
+  internal static let yearPersonaRomanceLine = L10n.tr("Localizable", "yearPersonaRomanceLine", fallback: "Love stories won you over.")
+  /// Starship Captain
+  internal static let yearPersonaSciFi = L10n.tr("Localizable", "yearPersonaSciFi", fallback: "Starship Captain")
+  /// Other worlds were where you spent your time.
+  internal static let yearPersonaSciFiLine = L10n.tr("Localizable", "yearPersonaSciFiLine", fallback: "Other worlds were where you spent your time.")
+  /// Story Collector
+  internal static let yearPersonaStories = L10n.tr("Localizable", "yearPersonaStories", fallback: "Story Collector")
+  /// You watched a little of everything.
+  internal static let yearPersonaStoriesLine = L10n.tr("Localizable", "yearPersonaStoriesLine", fallback: "You watched a little of everything.")
+  /// The %1$@ %2$@
+  internal static func yearPersonaTitle(_ p1: Any, _ p2: Any) -> String {
+    return L10n.tr("Localizable", "yearPersonaTitle", String(describing: p1), String(describing: p2), fallback: "The %1$@ %2$@")
+  }
+  /// Weekend
+  internal static let yearPersonaWeekend = L10n.tr("Localizable", "yearPersonaWeekend", fallback: "Weekend")
+  /// Saturdays and Sundays were for watching.
+  internal static let yearPersonaWeekendLine = L10n.tr("Localizable", "yearPersonaWeekendLine", fallback: "Saturdays and Sundays were for watching.")
   /// Years
   internal static let years = L10n.tr("Localizable", "years", fallback: "Years")
   /// %@ years old

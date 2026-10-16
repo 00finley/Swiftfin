@@ -41,6 +41,10 @@
 	</array>
 	<key>DiscoverSeedTitles</key>
 	<string>$(DISCOVER_SEED_TITLES)</string>
+	<key>GlassfinHelperToken</key>
+	<string>$(GLASSFIN_HELPER_TOKEN)</string>
+	<key>GlassfinHelperURL</key>
+	<string>$(GLASSFIN_HELPER_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
