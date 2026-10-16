@@ -8,185 +8,6 @@
 
 import SwiftUI
 
-/// One combined, personalized feed across the user's streaming services.
-struct DiscoverView: View {
-
-    @StateObject
-    private var viewModel = DiscoverViewModel()
-
-    @Router
-    private var router
-
-    @FocusState
-    private var focusedItemID: String?
-
-    private var focusedItem: DiscoverItem? {
-        guard let focusedItemID else { return viewModel.hero }
-
-        return viewModel.rows.lazy.flatMap(\.items).first { $0.id == focusedItemID } ?? viewModel.hero
-    }
-
-    var body: some View {
-        ZStack {
-            DiscoverBackground(item: focusedItem, isHeroVisible: focusedItemID == nil)
-
-            switch viewModel.state {
-            case .loading:
-                ProgressView()
-
-            case .error:
-                DiscoverMessage(text: L10n.discoverLoadFailed) {
-                    viewModel.refresh(force: true)
-                }
-
-            case .loaded:
-                if viewModel.rows.isEmpty, viewModel.hero == nil {
-                    DiscoverMessage(text: L10n.discoverNothingYet, retry: nil)
-                } else {
-                    feed
-                }
-            }
-        }
-        .onAppear {
-            SeerrStatusStore.installRequestHandler()
-            viewModel.refreshIfNeeded()
-        }
-    }
-
-    private var feed: some View {
-        ScrollView(.vertical) {
-            // Not lazy: off-screen rows must exist for focus to move into them
-            VStack(alignment: .leading, spacing: 56) {
-                if let hero = viewModel.hero {
-                    DiscoverHero(item: hero, viewModel: viewModel) {
-                        open(hero)
-                    }
-                    .focusSection()
-                }
-
-                ForEach(viewModel.rows) { row in
-                    DiscoverRowView(row: row, viewModel: viewModel, focusedItemID: $focusedItemID) { item in
-                        open(item)
-                    }
-                }
-
-                Text(L10n.discoverAttribution)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.55))
-                    .frame(maxWidth: 1100, alignment: .leading)
-                    .padding(.horizontal, 80)
-                    .padding(.bottom, 60)
-            }
-        }
-        .scrollClipDisabled()
-    }
-
-    private func open(_ item: DiscoverItem) {
-        router.route(to: .discoverTitle(item: item, feed: viewModel))
-    }
-}
-
-// MARK: - Hero
-
-/// Full-bleed top pick: title, why it was picked, a short summary and actions.
-private struct DiscoverHero: View {
-
-    let item: DiscoverItem
-    @ObservedObject
-    var viewModel: DiscoverViewModel
-    let action: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Spacer(minLength: 0)
-
-            DiscoverTitleLogo(item: item, height: 150, maxWidth: 640)
-
-            if let reason = item.reason {
-                Text(reason)
-                    .font(.callout)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white.opacity(0.85))
-            }
-
-            if let overview = item.title.overview, overview.isNotEmpty {
-                Text(overview)
-                    .font(.callout)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(2)
-                    .frame(maxWidth: 1000, alignment: .leading)
-            }
-
-            HStack(spacing: 24) {
-                Button(action: action) {
-                    Label(L10n.discoverDetails, systemImage: "info.circle")
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 20)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(.white)
-
-                Button {
-                    viewModel.moreLikeThis(item.title)
-                } label: {
-                    Label(L10n.discoverMoreLikeThis, systemImage: "hand.thumbsup")
-                }
-                .buttonStyle(.glass)
-
-                Button {
-                    viewModel.notInterested(item.title)
-                } label: {
-                    Label(L10n.discoverNotInterested, systemImage: "hand.thumbsdown")
-                }
-                .buttonStyle(.glass)
-
-                DiscoverProviderLogos(providers: item.providers, size: 44)
-                    .padding(.leading, 12)
-            }
-            .padding(.top, 10)
-        }
-        .shadow(color: .black.opacity(0.35), radius: 12)
-        .padding(.horizontal, 80)
-        .frame(height: 760, alignment: .bottomLeading)
-    }
-}
-
-// MARK: - Row
-
-private struct DiscoverRowView: View {
-
-    let row: DiscoverRow
-    @ObservedObject
-    var viewModel: DiscoverViewModel
-    var focusedItemID: FocusState<String?>.Binding
-    let open: (DiscoverItem) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(row.title)
-                .font(.title3)
-                .fontWeight(.bold)
-                .padding(.horizontal, 80)
-
-            ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 40) {
-                    ForEach(row.items) { item in
-                        DiscoverCard(item: item, viewModel: viewModel) {
-                            open(item)
-                        }
-                        .focused(focusedItemID, equals: item.id)
-                    }
-                }
-                .padding(.horizontal, 80)
-                .padding(.vertical, 24)
-            }
-            .scrollIndicators(.hidden)
-            .scrollClipDisabled()
-        }
-        .focusSection()
-    }
-}
-
 // MARK: - Card
 
 /// 16:9 backdrop card with the service and in-library badges, title and subtitle below.
@@ -195,6 +16,8 @@ struct DiscoverCard: View {
     let item: DiscoverItem
     @ObservedObject
     var viewModel: DiscoverViewModel
+    /// 400 by default; 320 (5 across) on Home, 410 (4 across) in grids
+    var width: CGFloat = DiscoverCard.width
     let action: () -> Void
 
     @ObservedObject
@@ -222,7 +45,7 @@ struct DiscoverCard: View {
                         .placeholder { _ in Color.white.opacity(0.08) }
                         .failure { Color.white.opacity(0.08) }
                         .aspectRatio(16 / 9, contentMode: .fill)
-                        .frame(width: Self.width, height: Self.width * 9 / 16)
+                        .frame(width: width, height: width * 9 / 16)
                         .clipped()
 
                     if let provider = item.providers.first {
@@ -251,16 +74,11 @@ struct DiscoverCard: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
                 }
-                .frame(width: Self.width, height: Self.width * 9 / 16)
+                .frame(width: width, height: width * 9 / 16)
             }
             .buttonStyle(.card)
             .contextMenu {
-                Button(L10n.discoverMoreLikeThis, systemImage: "hand.thumbsup") {
-                    viewModel.moreLikeThis(item.title)
-                }
-                Button(L10n.discoverNotInterested, systemImage: "hand.thumbsdown", role: .destructive) {
-                    viewModel.notInterested(item.title)
-                }
+                DiscoverFeedbackMenu(title: item.title, feed: viewModel)
             }
             .accessibilityLabel(item.title.title)
 
@@ -279,7 +97,7 @@ struct DiscoverCard: View {
                 }
             }
         }
-        .frame(width: Self.width, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .onAppear {
             if !item.isInLibrary {
                 seerr.prefetch(item.title)
@@ -397,26 +215,5 @@ struct DiscoverBackground: View {
         .animation(.easeOut(duration: 0.4), value: item?.id)
         .animation(.easeOut(duration: 0.4), value: isHeroVisible)
         .ignoresSafeArea()
-    }
-}
-
-private struct DiscoverMessage: View {
-
-    let text: String
-    let retry: (() -> Void)?
-
-    var body: some View {
-        VStack(spacing: 30) {
-            Text(text)
-                .font(.callout)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 900)
-
-            if let retry {
-                Button(L10n.retry, action: retry)
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-            }
-        }
     }
 }

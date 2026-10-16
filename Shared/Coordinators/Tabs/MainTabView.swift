@@ -40,7 +40,7 @@ struct MainTabView: View {
         TabCoordinator {
             TabItem.contentGroup(provider: DefaultContentGroupProvider())
             if TMDBClient.isAvailable {
-                TabItem.discover
+                TabItem.categories
             }
             TabItem.library(
                 title: L10n.tvShowsCapitalized,
