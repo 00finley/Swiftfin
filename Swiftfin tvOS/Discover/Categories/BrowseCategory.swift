@@ -45,6 +45,8 @@ struct BrowseCategory: Identifiable, Hashable {
         case languages
         case services
         case family
+        /// Featured holiday and seasonal collections (not in the catalog or the picker)
+        case celebrate
 
         var id: String {
             rawValue
@@ -60,6 +62,7 @@ struct BrowseCategory: Identifiable, Hashable {
             case .languages: L10n.categoriesLanguages
             case .services: L10n.categoriesServices
             case .family: L10n.categoriesFamily
+            case .celebrate: L10n.categoriesCelebrate
             }
         }
 

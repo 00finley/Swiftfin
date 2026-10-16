@@ -292,6 +292,8 @@ internal enum L10n {
   internal static let categoriesAcclaimed = L10n.tr("Localizable", "categoriesAcclaimed", fallback: "Acclaimed")
   /// Add Category
   internal static let categoriesAddCategory = L10n.tr("Localizable", "categoriesAddCategory", fallback: "Add Category")
+  /// Celebrate
+  internal static let categoriesCelebrate = L10n.tr("Localizable", "categoriesCelebrate", fallback: "Celebrate")
   /// Clear Search
   internal static let categoriesClearSearch = L10n.tr("Localizable", "categoriesClearSearch", fallback: "Clear Search")
   /// Eras
@@ -300,6 +302,8 @@ internal enum L10n {
   internal static let categoriesEverything = L10n.tr("Localizable", "categoriesEverything", fallback: "Everything")
   /// Family & Kids
   internal static let categoriesFamily = L10n.tr("Localizable", "categoriesFamily", fallback: "Family & Kids")
+  /// Featured Now
+  internal static let categoriesFeaturedNow = L10n.tr("Localizable", "categoriesFeaturedNow", fallback: "Featured Now")
   /// Formats
   internal static let categoriesFormats = L10n.tr("Localizable", "categoriesFormats", fallback: "Formats")
   /// For You
@@ -380,6 +384,34 @@ internal enum L10n {
   internal static let collectionFolders = L10n.tr("Localizable", "collectionFolders", fallback: "Collection folders")
   /// Collections
   internal static let collections = L10n.tr("Localizable", "collections", fallback: "Collections")
+  /// Featured collections for holidays and seasons appear at the top of Categories and as a row on Home. Fun & Obscure Days adds days like Talk Like a Pirate Day and Back to the Future Day.
+  internal static let collectionsDescription = L10n.tr("Localizable", "collectionsDescription", fallback: "Featured collections for holidays and seasons appear at the top of Categories and as a row on Home. Fun & Obscure Days adds days like Talk Like a Pirate Day and Back to the Future Day.")
+  /// Featured
+  internal static let collectionsFeatured = L10n.tr("Localizable", "collectionsFeatured", fallback: "Featured")
+  /// Fun & Obscure Days
+  internal static let collectionsFunDays = L10n.tr("Localizable", "collectionsFunDays", fallback: "Fun & Obscure Days")
+  /// Now
+  internal static let collectionsNow = L10n.tr("Localizable", "collectionsNow", fallback: "Now")
+  /// %@ Picks
+  internal static func collectionsPicks(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "collectionsPicks", String(describing: p1), fallback: "%@ Picks")
+  }
+  /// Seasonal Collections
+  internal static let collectionsSeasonal = L10n.tr("Localizable", "collectionsSeasonal", fallback: "Seasonal Collections")
+  /// See All
+  internal static let collectionsSeeAll = L10n.tr("Localizable", "collectionsSeeAll", fallback: "See All")
+  /// Starts %@
+  internal static func collectionsStarts(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "collectionsStarts", String(describing: p1), fallback: "Starts %@")
+  }
+  /// Through %@
+  internal static func collectionsThrough(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "collectionsThrough", String(describing: p1), fallback: "Through %@")
+  }
+  /// Today
+  internal static let collectionsToday = L10n.tr("Localizable", "collectionsToday", fallback: "Today")
+  /// Tomorrow
+  internal static let collectionsTomorrow = L10n.tr("Localizable", "collectionsTomorrow", fallback: "Tomorrow")
   /// Color
   internal static let color = L10n.tr("Localizable", "color", fallback: "Color")
   /// Colorist
