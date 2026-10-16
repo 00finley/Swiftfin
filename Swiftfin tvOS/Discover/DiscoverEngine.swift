@@ -67,7 +67,8 @@ struct DiscoverEngine {
     // MARK: - Feed
 
     func buildFeed() async throws -> Feed {
-        let library = try await loadLibrary()
+        // If the Jellyfin server is unreachable (e.g. mid-migration), still show the TMDB rows without history
+        let library = await (try? loadLibrary()) ?? Library()
 
         async let trendingRequest = tmdb.trending()
         async let newRequest = tmdb.newOnServices(providers: providers, region: region)
