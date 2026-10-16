@@ -89,6 +89,9 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
 
         PlaySomethingContentGroup()
 
+        // Channels: random full episodes back to back (Swiftfin tvOS/Channels)
+        ChannelsContentGroup()
+
         if GlassfinHelperClient.isConfigured {
             ComingThisWeekContentGroup()
         }

@@ -359,6 +359,12 @@ extension VideoPlayer {
             didSet { refreshAutoDismiss() }
         }
 
+        /// Offered each remote press before the player handles it; returns whether it handled it.
+        /// Channels (`Swiftfin tvOS/Channels`) set this for Right (next episode), Down (what's playing),
+        /// Select and Back (Up Next card) while the transport bar is hidden. Nil for normal playback.
+        @ObservationIgnored
+        var pressInterceptor: ((UIPress.PressType, UIPress.Phase) -> Bool)?
+
         var scrubOriginSeconds: Duration?
 
         func commitScrub() {
