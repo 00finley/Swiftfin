@@ -175,10 +175,14 @@ final class CategoryResultsViewModel: ObservableObject {
 
     let pager = DiscoverTitlePager()
 
+    /// Curated titles (TMDB keys) shown first, e.g. a featured collection's anchors. Set before `query`.
+    var pinnedKeys: [String]
+
     private var cancellables: Set<AnyCancellable> = []
 
-    init(query: BrowseQuery) {
+    init(query: BrowseQuery, pinnedKeys: [String] = []) {
         self.query = query
+        self.pinnedKeys = pinnedKeys
         pager.objectWillChange
             .sink { [weak self] in self?.objectWillChange.send() }
             .store(in: &cancellables)
@@ -191,12 +195,24 @@ final class CategoryResultsViewModel: ObservableObject {
     }
 
     func reload() {
+        Self.load(pager, query: query, pinnedKeys: pinnedKeys)
+    }
+
+    /// Starts `pager` on a query's results (also used for featured collection previews).
+    static func load(_ pager: DiscoverTitlePager, query: BrowseQuery, pinnedKeys: [String] = []) {
         let providers = Defaults[.Discover.providers]
         let region = Defaults[.Discover.region]
-        let sources: [DiscoverTitlePager.Source] = query.kinds.compactMap { kind in
+        var sources: [DiscoverTitlePager.Source] = query.kinds.compactMap { kind in
             guard let parameters = query.parameters(for: kind, myProviders: providers, region: region) else { return nil }
 
             return { page in try await TMDBClient.shared.discover(kind: kind, query: parameters, page: page) }
+        }
+
+        // Pins come first as their own one-page source, limited to the media types shown
+        let kinds = Set(query.kinds.map(\.rawValue))
+        let pins = pinnedKeys.filter { kinds.contains(String($0.prefix { $0 != "-" })) }
+        if pins.isNotEmpty, sources.isNotEmpty {
+            sources.insert({ _ in await pinnedPage(pins) }, at: 0)
         }
 
         guard query.sort == .forYou else {
@@ -206,8 +222,15 @@ final class CategoryResultsViewModel: ObservableObject {
 
         // For You: about three pages of popular titles per batch, reranked for the user, then appended
         pager.reset(sources, pagesPerBatch: 3) { titles in
-            await Self.forYouOrder(titles)
+            let pinned = pins.compactMap { key in titles.first { $0.id == key } }
+            let rest = titles.filter { !pins.contains($0.id) }
+            return await pinned + Self.forYouOrder(rest)
         }
+    }
+
+    private static func pinnedPage(_ keys: [String]) async -> TMDBPage {
+        let infos = await DiscoverTitleInfoStore.shared.infos(for: keys)
+        return TMDBPage(titles: keys.compactMap { infos[$0]?.title }, page: 1, totalPages: 1)
     }
 
     /// Ranks a batch by taste; the strongest candidates also get keyword affinity

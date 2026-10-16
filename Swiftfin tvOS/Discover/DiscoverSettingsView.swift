@@ -19,6 +19,10 @@ struct DiscoverSettingsView: View {
     private var showOnHome
     @Default(.Discover.searchIncludesRequestable)
     private var searchIncludesRequestable
+    @Default(.Discover.seasonalCollections)
+    private var seasonalCollections
+    @Default(.Discover.funDays)
+    private var funDays
 
     @Default(.Discover.seerrURL)
     private var seerrURL
@@ -65,6 +69,16 @@ struct DiscoverSettingsView: View {
                 Text(L10n.home)
             } footer: {
                 Text(L10n.discoverShowOnHomeDescription)
+            }
+
+            Section {
+                Toggle(L10n.collectionsSeasonal, isOn: $seasonalCollections)
+                Toggle(L10n.collectionsFunDays, isOn: $funDays)
+                    .disabled(!seasonalCollections)
+            } header: {
+                Text(L10n.collections)
+            } footer: {
+                Text(L10n.collectionsDescription)
             }
 
             Section {

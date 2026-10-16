@@ -155,8 +155,13 @@ struct DiscoverHomeSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 60) {
-            ForEach(shelves) { shelf in
+            ForEach(Array(shelves.enumerated()), id: \.element.id) { index, shelf in
                 shelfView(shelf)
+
+                // The featured collection's row ("Halloween Picks") follows the feature row
+                if index == 0 {
+                    FeaturedCollectionHomeRow(feed: feed)
+                }
             }
 
             Text(L10n.discoverAttribution)
@@ -167,6 +172,7 @@ struct DiscoverHomeSection: View {
         }
         .onAppear {
             SeerrStatusStore.installRequestHandler()
+            FeaturedCollectionsModel.shared.prepare()
         }
     }
 

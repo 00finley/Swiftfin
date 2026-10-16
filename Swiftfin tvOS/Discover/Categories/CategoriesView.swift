@@ -17,6 +17,8 @@ struct CategoriesView: View {
     private var search = CategorySearchViewModel()
     @StateObject
     private var feed = DiscoverViewModel.shared
+    @ObservedObject
+    private var collections = FeaturedCollectionsModel.shared
 
     @Default(.Discover.providers)
     private var providers
@@ -42,9 +44,13 @@ struct CategoriesView: View {
                 if search.isActive {
                     DiscoverTitleGrid(pager: search.pager, feed: feed, emptyText: L10n.categoriesNoSearchResults)
                 } else {
+                    FeaturedCollectionsSection(model: collections)
+
                     ForEach(groups, id: \.group) { entry in
                         groupSection(entry.group, categories: entry.categories)
                     }
+
+                    CelebrateSection(model: collections)
                 }
 
                 Text(L10n.discoverAttribution)
@@ -64,6 +70,7 @@ struct CategoriesView: View {
             feed.ensureLibrary()
             // So For You and search don't wait for it later
             feed.prepareTaste()
+            collections.prepare()
         }
         .task(id: region) {
             if let logos = try? await TMDBClient.shared.providerLogos(region: region) {
