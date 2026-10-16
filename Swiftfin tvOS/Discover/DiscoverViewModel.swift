@@ -52,6 +52,11 @@ final class DiscoverViewModel: ObservableObject {
 
     private var lastBuilt: Date?
     private var buildTask: Task<Void, Never>?
+    private var ratingRefreshTask: Task<Void, Never>?
+
+    /// Taste from the last feed build or Categories, dropped when ratings change.
+    private(set) var taste: DiscoverTaste?
+    private var tasteTask: Task<DiscoverTaste, Never>?
     private var cancellables: Set<AnyCancellable> = []
 
     /// Rebuild after this long when the tab reappears.
@@ -63,12 +68,56 @@ final class DiscoverViewModel: ObservableObject {
             .sink { [weak self] in self?.refresh(force: true) }
             .store(in: &cancellables)
 
-        // "Reset Recommendations" in Settings clears the profile
+        // Ratings change what Categories ranks first
         Defaults.publisher(.Discover.profile, options: [])
-            .filter { $0.newValue == DiscoverProfile() }
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.refresh(force: true) }
+            .sink { [weak self] change in
+                self?.taste = nil
+                self?.tasteTask = nil
+                // "Reset Recommendations" in Settings clears the profile
+                if change.newValue == DiscoverProfile() {
+                    self?.refresh(force: true)
+                }
+            }
             .store(in: &cancellables)
+    }
+
+    private func makeEngine(_ userSession: UserSession) -> DiscoverEngine {
+        DiscoverEngine(
+            client: userSession.client,
+            userID: userSession.user.id,
+            providers: Defaults[.Discover.providers],
+            region: Defaults[.Discover.region],
+            profile: Defaults[.Discover.profile]
+        )
+    }
+
+    /// The user's taste for ranking Categories; built once and reused until ratings change.
+    func currentTaste() async -> DiscoverTaste {
+        if let taste {
+            return taste
+        }
+        if let tasteTask {
+            return await tasteTask.value
+        }
+        guard let userSession else { return DiscoverTaste() }
+
+        let engine = makeEngine(userSession)
+        let task = Task { await engine.prepareContext().taste }
+        tasteTask = task
+        let built = await task.value
+        if tasteTask == task {
+            taste = built
+            tasteTask = nil
+        }
+        return built
+    }
+
+    /// Starts building the taste in the background (e.g. when Categories opens).
+    func prepareTaste() {
+        guard taste == nil, tasteTask == nil else { return }
+
+        Task { _ = await currentTaste() }
     }
 
     func refreshIfNeeded() {
@@ -87,13 +136,7 @@ final class DiscoverViewModel: ObservableObject {
             state = .loading
         }
 
-        let engine = DiscoverEngine(
-            client: userSession.client,
-            userID: userSession.user.id,
-            providers: Defaults[.Discover.providers],
-            region: Defaults[.Discover.region],
-            profile: Defaults[.Discover.profile]
-        )
+        let engine = makeEngine(userSession)
 
         buildTask = Task {
             do {
@@ -103,6 +146,7 @@ final class DiscoverViewModel: ObservableObject {
                 hero = feed.hero
                 rows = feed.rows
                 libraryItemIDs = feed.libraryItemIDs
+                taste = feed.taste
                 lastBuilt = .now
                 state = .loaded
             } catch {
@@ -123,13 +167,7 @@ final class DiscoverViewModel: ObservableObject {
     func ensureLibrary() {
         guard libraryItemIDs.isEmpty, libraryTask == nil, buildTask == nil, let userSession else { return }
 
-        let engine = DiscoverEngine(
-            client: userSession.client,
-            userID: userSession.user.id,
-            providers: Defaults[.Discover.providers],
-            region: Defaults[.Discover.region],
-            profile: Defaults[.Discover.profile]
-        )
+        let engine = makeEngine(userSession)
         libraryTask = Task {
             if let library = try? await engine.loadLibrary(), libraryItemIDs.isEmpty {
                 libraryItemIDs = library.itemIDsByKey
@@ -138,42 +176,53 @@ final class DiscoverViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Feedback
+    // MARK: - Ratings
 
-    /// Hide the title everywhere and lean away from its genres.
-    func notInterested(_ title: DiscoverTitle) {
-        var profile = Defaults[.Discover.profile]
-        profile.dismissed.insert(title.id)
-        profile.liked[title.id] = nil
-        for genre in title.genreIDs {
-            profile.genreFeedback[genre] = max(-1, (profile.genreFeedback[genre] ?? 0) - 0.15)
-        }
-        Defaults[.Discover.profile] = profile
-
-        rows = rows.compactMap { row in
-            let items = row.items.filter { $0.id != title.id }
-            return items.isEmpty ? nil : DiscoverRow(kind: row.kind, title: row.title, items: items)
-        }
-        if hero?.id == title.id {
-            hero = rows.first?.items.first
-        }
+    /// The current rating (in-app, else the seed list, else It's OK).
+    func rating(for title: DiscoverTitle) -> DiscoverRatingLevel {
+        Defaults[.Discover.profile].level(for: title.id)
     }
 
-    /// Use the title as a recommendation seed and lean toward its genres, then rebuild.
-    func moreLikeThis(_ title: DiscoverTitle) {
+    /// Love It / Like It feed recommendations; Not for Me hides the title everywhere; It's OK clears.
+    func rate(_ title: DiscoverTitle, _ level: DiscoverRatingLevel) {
         var profile = Defaults[.Discover.profile]
-        profile.liked[title.id] = title
-        profile.dismissed.remove(title.id)
-        for genre in title.genreIDs {
-            profile.genreFeedback[genre] = min(1, (profile.genreFeedback[genre] ?? 0) + 0.1)
-        }
+        profile.rate(title.id, level, title: title)
         Defaults[.Discover.profile] = profile
 
-        refresh(force: true)
+        if level == .disliked {
+            rows = rows.compactMap { row in
+                let items = row.items.filter { $0.id != title.id }
+                return items.isEmpty ? nil : DiscoverRow(kind: row.kind, title: row.title, items: items)
+            }
+            if hero?.id == title.id {
+                hero = rows.first?.items.first
+            }
+        }
+
+        scheduleRebuild()
     }
 
-    func isLiked(_ title: DiscoverTitle) -> Bool {
-        Defaults[.Discover.profile].liked[title.id] != nil
+    /// Settings: rate by key (the title snapshot may be missing for older entries).
+    func rate(key: String, _ level: DiscoverRatingLevel, title: DiscoverTitle?) {
+        if let title {
+            rate(title, level)
+            return
+        }
+        var profile = Defaults[.Discover.profile]
+        profile.rate(key, level, title: nil)
+        Defaults[.Discover.profile] = profile
+        scheduleRebuild()
+    }
+
+    /// Rebuilds the feed once the user stops rating for a moment.
+    private func scheduleRebuild() {
+        ratingRefreshTask?.cancel()
+        ratingRefreshTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+
+            self?.refresh(force: true)
+        }
     }
 
     func resetPersonalization() {
@@ -221,10 +270,10 @@ final class DiscoverTitleViewModel: ObservableObject {
             let mine = all.filter { services.contains($0.id) }
             providers = mine.isEmpty ? Array(all.prefix(3)) : mine
 
-            let dismissed = Defaults[.Discover.profile].dismissed
+            let hidden = Defaults[.Discover.profile].hiddenKeys
             var seen = Set<String>()
             moreLikeThis = (details.recommendations + details.similar)
-                .filter { $0.backdropPath != nil && dismissed.contains($0.id) == false && seen.insert($0.id).inserted }
+                .filter { $0.backdropPath != nil && hidden.contains($0.id) == false && seen.insert($0.id).inserted }
                 .prefix(20)
                 .map { DiscoverItem(title: $0, providers: [], libraryItemID: nil, reason: nil) }
         } catch {

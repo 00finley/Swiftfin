@@ -27,9 +27,6 @@ struct DiscoverTitleView: View {
     @Router
     private var router
 
-    @Environment(\.dismiss)
-    private var dismiss
-
     init(item: DiscoverItem, feed: DiscoverViewModel) {
         _viewModel = StateObject(wrappedValue: DiscoverTitleViewModel(item: item))
         self.feed = feed
@@ -51,11 +48,6 @@ struct DiscoverTitleView: View {
         return seerr.status(for: item.title) ?? .notRequested
     }
 
-    /// The white primary button: Open in Library, then Request, otherwise More Like This.
-    private var hasPrimaryAction: Bool {
-        viewModel.libraryItemID != nil || requestStatus == .notRequested
-    }
-
     private func request() {
         guard let handler = DiscoverRequests.handler, !isRequesting else { return }
 
@@ -69,6 +61,20 @@ struct DiscoverTitleView: View {
                 show(Toast(message: error.localizedDescription, isError: true))
             }
             isRequesting = false
+        }
+    }
+
+    /// Opens the YouTube app at the trailer (a deep link only; nothing is streamed here).
+    private func openTrailer(_ key: String) {
+        guard let trailer = ExternalTrailerURL(string: "https://www.youtube.com/watch?v=\(key)"), trailer.canBeOpened else {
+            show(Toast(message: L10n.discoverYouTubeNotInstalled, isError: true))
+            return
+        }
+
+        UIApplication.shared.open(trailer.deepLink) { success in
+            if !success {
+                show(Toast(message: L10n.discoverYouTubeNotInstalled, isError: true))
+            }
         }
     }
 
@@ -227,23 +233,20 @@ struct DiscoverTitleView: View {
                     }
                 }
 
-                Button {
-                    feed.moreLikeThis(item.title)
-                } label: {
-                    Label(L10n.discoverMoreLikeThis, systemImage: feed.isLiked(item.title) ? "hand.thumbsup.fill" : "hand.thumbsup")
-                        .fontWeight(hasPrimaryAction ? .regular : .semibold)
-                        .padding(.horizontal, hasPrimaryAction ? 0 : 24)
+                if let trailerKey = viewModel.details?.trailerKey {
+                    Button {
+                        openTrailer(trailerKey)
+                    } label: {
+                        Label(L10n.discoverWatchTrailer, systemImage: "play.rectangle")
+                    }
+                    .buttonStyle(GlassChipButtonStyle())
                 }
-                .if(!hasPrimaryAction) { $0.buttonStyle(.glassProminent).tint(.white) }
-                .if(hasPrimaryAction) { $0.buttonStyle(.glass) }
 
-                Button {
-                    feed.notInterested(item.title)
-                    dismiss()
-                } label: {
-                    Label(L10n.discoverNotInterested, systemImage: "hand.thumbsdown")
+                DiscoverRatingControl(title: item.title, feed: feed) { level in
+                    if level == .disliked {
+                        show(Toast(message: L10n.discoverHiddenToast, isError: false))
+                    }
                 }
-                .buttonStyle(.glass)
             }
             .padding(.top, 8)
         }
@@ -267,5 +270,41 @@ struct DiscoverTitleView: View {
                 .font(.callout)
                 .foregroundStyle(.white.opacity(0.62))
         }
+    }
+}
+
+/// Love It / Like It / It's OK / Not for Me as one row of glass choices; the current rating is
+/// white with a dark label, like the focused choice. Picking the current rating again clears it.
+struct DiscoverRatingControl: View {
+
+    let title: DiscoverTitle
+    let feed: DiscoverViewModel
+    var onRate: (DiscoverRatingLevel) -> Void = { _ in }
+
+    @Default(.Discover.profile)
+    private var profile
+
+    var body: some View {
+        let current = profile.level(for: title.id)
+
+        HStack(spacing: 16) {
+            ForEach(DiscoverRatingLevel.displayOrder, id: \.self) { level in
+                // It's OK shows as chosen only when it overrides a seeded rating
+                let isSelected = level == current && (level != .neutral || profile.ratings[title.id]?.level == .neutral)
+
+                Button {
+                    let newLevel = isSelected ? DiscoverRatingLevel.neutral : level
+                    feed.rate(title, newLevel)
+                    onRate(newLevel)
+                } label: {
+                    Label(level.title, systemImage: isSelected ? level.selectedSystemImage : level.systemImage)
+                }
+                .buttonStyle(GlassChipButtonStyle(isSelected: isSelected, solidSelection: true))
+                .accessibilityLabel(level.title)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.discoverRate)
     }
 }

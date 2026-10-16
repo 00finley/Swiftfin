@@ -13,12 +13,13 @@ import JellyfinAPI
 ///
 /// Scoring is deliberately simple and explainable:
 /// - **Seeds** come from Jellyfin watch history (finished and favorited titles weigh most,
-///   partially watched less, long-abandoned least) plus titles marked "More Like This".
+///   partially watched less, long-abandoned least) plus titles rated Love It or Like It (in the app
+///   or in the build's seed list). Rated seeds rotate daily, favoring Love It.
 /// - **Candidates** are TMDB recommendations and similar titles for the strongest seeds,
 ///   plus what's new and trending on the user's services.
 /// - **Score** = seed matches (weighted) + genre affinity + recency + popularity (log) +
 ///   rating confidence + a bonus when it streams on the user's services.
-/// - Watched, finished-in-library and "Not Interested" titles are excluded.
+/// - Watched, finished-in-library, rated and Not for Me titles are excluded.
 struct DiscoverEngine {
 
     struct Feed {
@@ -26,25 +27,40 @@ struct DiscoverEngine {
         var rows: [DiscoverRow]
         /// Jellyfin item ids keyed by TMDB key ("tv-1396"), for "In Library" badges elsewhere.
         var libraryItemIDs: [String: String] = [:]
+        var taste = DiscoverTaste()
     }
 
     /// A title the user has engaged with, used to find similar titles.
     struct Seed {
+
+        enum Source {
+            case history
+            case liked
+            case loved
+        }
+
         let kind: DiscoverTitle.Kind
         let tmdbID: Int
-        let name: String
+        var name: String
         let weight: Double
         let lastActivity: Date?
-        /// From "More Like This" rather than watch history
-        var isLiked = false
+        var source: Source = .history
 
-        /// "Because You Watched X" for history, "More Like X" for explicit likes.
+        /// "Because You Watched X" for history, "Because You Loved X" / "Because You Liked X" for ratings.
         var label: String {
-            isLiked ? L10n.discoverMoreLike(name) : L10n.discoverBecauseYouWatched(name)
+            switch source {
+            case .history: L10n.discoverBecauseYouWatched(name)
+            case .liked: L10n.discoverBecauseYouLiked(name)
+            case .loved: L10n.discoverBecauseYouLoved(name)
+            }
         }
 
         var key: String {
             "\(kind.rawValue)-\(tmdbID)"
+        }
+
+        var isRated: Bool {
+            source != .history
         }
     }
 
@@ -55,6 +71,16 @@ struct DiscoverEngine {
         var seeds: [Seed] = []
     }
 
+    /// Seeds, their TMDB details and the taste built from them; shared by the feed and Categories.
+    struct Context {
+        var library = Library()
+        /// Strongest first
+        var seedDetails: [(Seed, TMDBDetails)] = []
+        var taste = DiscoverTaste()
+        /// Titles never recommended: hidden, finished, rated and the seeds themselves
+        var excluded: Set<String> = []
+    }
+
     let client: JellyfinClient
     let userID: String
     let providers: [Int]
@@ -62,42 +88,127 @@ struct DiscoverEngine {
     let profile: DiscoverProfile
 
     private let tmdb = TMDBClient.shared
-    private let seedsForCandidates = 5
-    private let becauseYouWatchedRows = 3
+    private let historySeedsForCandidates = 4
+    private let ratedSeedsForCandidates = 4
+    private let historySeedsForTaste = 20
     private let rowLength = 20
 
-    // MARK: - Feed
+    // MARK: - Context
 
-    func buildFeed() async throws -> Feed {
-        // If the Jellyfin server is unreachable (e.g. mid-migration), still show the TMDB rows without history
+    func prepareContext() async -> Context {
+        // If the Jellyfin server is unreachable (e.g. mid-migration), still use ratings without history
         let library = await (try? loadLibrary()) ?? Library()
+        let rated = profile.ratedTitles()
 
-        async let trendingRequest = tmdb.trending()
-        async let newRequest = tmdb.newOnServices(providers: providers, region: region)
-        async let comingRequest = tmdb.comingSoon(providers: providers, region: region)
-        async let genresRequest = tmdb.genres()
+        // A rated title counts as rated, not as history
+        let history = library.seeds
+            .filter { rated[$0.key] == nil }
+            .sorted { $0.weight > $1.weight }
+        let ratedSeeds = rated.values.compactMap { entry -> Seed? in
+            guard entry.level == .loved || entry.level == .liked, let kind = entry.kind, let id = entry.tmdbID else { return nil }
 
-        let seeds = Array(seedList(from: library).prefix(seedsForCandidates))
+            return Seed(
+                kind: kind,
+                tmdbID: id,
+                name: entry.title?.title ?? "",
+                weight: entry.level.seedWeight,
+                lastActivity: nil,
+                source: entry.level == .loved ? .loved : .liked
+            )
+        }
+
+        // Up to 4 of each; when one side is short, the other fills in
+        let total = historySeedsForCandidates + ratedSeedsForCandidates
+        let rotated = Self.dailyRotation(ratedSeeds)
+        let historyCount = min(history.count, max(historySeedsForCandidates, total - rotated.count))
+        let chosen = Array(history.prefix(historyCount)) + Array(rotated.prefix(total - historyCount))
+
+        async let infosRequest = DiscoverTitleInfoStore.shared.infos(
+            for: history.prefix(historySeedsForTaste).map(\.key) + rated.values.filter { $0.level != .neutral }.map(\.key)
+        )
+
         let seedDetails = await withTaskGroup(of: (Seed, TMDBDetails?).self) { group in
-            for seed in seeds {
+            for seed in chosen {
                 group.addTask { await (seed, try? tmdb.details(kind: seed.kind, id: seed.tmdbID)) }
             }
             var results: [(Seed, TMDBDetails)] = []
             for await (seed, details) in group {
-                if let details {
-                    results.append((seed, details))
+                guard let details else { continue }
+
+                var named = seed
+                if named.name.isEmpty {
+                    named.name = details.title.title
                 }
+                results.append((named, details))
             }
             return results.sorted { $0.0.weight > $1.0.weight }
         }
+        let infos = await infosRequest
 
-        let trending = await (try? trendingRequest) ?? []
+        var taste = DiscoverTaste()
+        var sources: [DiscoverTaste.Source] = history.prefix(historySeedsForTaste).compactMap { seed in
+            infos[seed.key].map { .init(genres: $0.title.genreIDs, keywords: $0.keywords, weight: seed.weight) }
+        }
+        for entry in rated.values where entry.level != .neutral {
+            let genres = infos[entry.key]?.title.genreIDs ?? entry.title?.genreIDs ?? []
+            sources.append(.init(genres: genres, keywords: infos[entry.key]?.keywords ?? [], weight: entry.level.tasteWeight))
+        }
+        taste.learn(from: sources, genreFeedback: profile.genreFeedback)
+
+        for (seed, details) in seedDetails {
+            for (title, strength) in details.recommendations.map({ ($0, 1.0) }) + details.similar.map({ ($0, 0.6) }) {
+                taste.related[title.id, default: 0] += seed.weight * strength / 1.5
+            }
+        }
+        taste.related = taste.related.mapValues { min(1, $0) }
+        taste.libraryKeys = Set(library.itemIDsByKey.keys)
+        taste.hiddenKeys = profile.hiddenKeys
+        taste.watchedKeys = library.finishedKeys.union(rated.values.filter { $0.level != .disliked }.map(\.key))
+
+        let excluded = taste.hiddenKeys
+            .union(library.finishedKeys)
+            .union(rated.keys)
+            .union(seedDetails.map(\.0.key))
+
+        return Context(library: library, seedDetails: seedDetails, taste: taste, excluded: excluded)
+    }
+
+    /// Rated seeds in a different order each day, Love It more often than Like It
+    /// (weighted random order with a stable per-day hash).
+    static func dailyRotation(_ seeds: [Seed], day: Int = Int(Date.now.timeIntervalSince1970 / 86400)) -> [Seed] {
+        seeds
+            .map { seed -> (Seed, Double) in
+                var hash: UInt64 = 0xCBF2_9CE4_8422_2325
+                for byte in "\(day)-\(seed.key)".utf8 {
+                    hash = (hash ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
+                }
+                let unit = (Double(hash % 1_000_000) + 0.5) / 1_000_000
+                return (seed, pow(unit, 1 / max(0.1, seed.weight)))
+            }
+            .sorted { $0.1 > $1.1 }
+            .map(\.0)
+    }
+
+    // MARK: - Feed
+
+    func buildFeed() async throws -> Feed {
+        async let trendingFirst = tmdb.trending(page: 1)
+        async let trendingSecond = tmdb.trending(page: 2)
+        async let newRequest = tmdb.newOnServices(providers: providers, region: region)
+        async let comingRequest = tmdb.comingSoon(providers: providers, region: region)
+        async let genresRequest = tmdb.genres()
+
+        let context = await prepareContext()
+        let library = context.library
+        let seedDetails = context.seedDetails
+        let taste = context.taste
+        let excluded = context.excluded
+
+        // Two pages: the Top 10 needs ten titles even when few trending titles are on the user's services
+        let trending = await ((try? trendingFirst) ?? []) + ((try? trendingSecond) ?? [])
         let newTitles = await (try? newRequest) ?? []
         let coming = await (try? comingRequest) ?? []
         let genreNames = await (try? genresRequest) ?? [:]
-
-        let affinity = genreAffinity(seedDetails: seedDetails)
-        let excluded = profile.dismissed.union(library.finishedKeys).union(seeds.map(\.key))
 
         // Candidate pool with seed matches
         var candidates: [String: DiscoverTitle] = [:]
@@ -123,7 +234,7 @@ struct DiscoverEngine {
 
         func score(_ title: DiscoverTitle) -> Double {
             let match = seedMatches[title.id]?.score ?? 0
-            let genre = title.genreIDs.isEmpty ? 0 : title.genreIDs.map { affinity[$0] ?? 0 }.reduce(0, +) / Double(title.genreIDs.count)
+            let genre = taste.genreScore(title)
             let age = title.releaseDate.map { max(0, Date.now.timeIntervalSince($0) / 86400) } ?? 3650
             let recency = exp(-age / 365)
             let popularity = min(1, log10(1 + title.popularity) / 3)
@@ -139,7 +250,7 @@ struct DiscoverEngine {
             if newKeys.contains(title.id) {
                 return L10n.discoverNewOnYourServices
             }
-            if let top = title.genreIDs.max(by: { (affinity[$0] ?? 0) < (affinity[$1] ?? 0) }), let name = genreNames[top] {
+            if let top = title.genreIDs.max(by: { (taste.genre[$0] ?? 0) < (taste.genre[$1] ?? 0) }), let name = genreNames[top] {
                 return name
             }
             return nil
@@ -157,13 +268,16 @@ struct DiscoverEngine {
         }
         let topPicks = Array((available.count >= 8 ? available : topCandidates).prefix(rowLength))
 
-        // Trending, filtered to the user's services when enough titles qualify
-        let trendingCandidates = Array(trending.filter { excluded.contains($0.id) == false && $0.backdropPath != nil }
+        // Trending: the user's services when at least ten trending titles stream there (so the
+        // Top 10 stays full), otherwise TMDB's own order
+        var seenTrending = Set<String>()
+        let trendingCandidates = Array(trending
+            .filter { excluded.contains($0.id) == false && $0.backdropPath != nil && seenTrending.insert($0.id).inserted }
             .prefix(rowLength * 2))
         let trendingProviders = await providers(for: trendingCandidates)
         let trendingOnServices = trendingCandidates
             .filter { trendingProviders[$0.id]?.contains(where: { providers.contains($0.id) }) == true }
-        let trendingRow = Array((trendingOnServices.count >= 6 ? trendingOnServices : trendingCandidates).prefix(rowLength))
+        let trendingRow = Array((trendingOnServices.count >= 10 ? trendingOnServices : trendingCandidates).prefix(rowLength))
 
         let allProviders = topProviders.merging(trendingProviders) { first, _ in first }
 
@@ -188,19 +302,32 @@ struct DiscoverEngine {
             rows.append(DiscoverRow(kind: .topPicks, title: L10n.discoverTopPicks, items: Array(topItems.dropFirst())))
         }
 
-        // Skip titles already in Top Picks when the row stays full enough
+        // Because You Watched / Loved / Liked rows, alternating; skip titles already in Top Picks
+        // when the row stays full enough
         let topPickKeys = Set(topItems.map(\.id))
-        for (seed, details) in seedDetails.prefix(becauseYouWatchedRows) {
+        func seedRow(_ seed: Seed, _ details: TMDBDetails) -> DiscoverRow? {
             let all = unique(details.recommendations + details.similar)
             let fresh = all.filter { topPickKeys.contains($0.id) == false }
             let titles = (fresh.count >= 6 ? fresh : all).prefix(rowLength)
-            guard titles.count >= 4 else { continue }
+            guard titles.count >= 4 else { return nil }
 
-            rows.append(DiscoverRow(
-                kind: .becauseYouWatched(seed.key),
+            return DiscoverRow(
+                kind: seed.isRated ? .becauseYouRated(seed.key) : .becauseYouWatched(seed.key),
                 title: seed.label,
                 items: titles.map { item($0, withReason: false) }
-            ))
+            )
+        }
+        let historyRows = seedDetails.filter { !$0.0.isRated }.compactMap(seedRow)
+        let ratedRows = seedDetails.filter(\.0.isRated).compactMap(seedRow)
+        let ratedRowCount = min(2, ratedRows.count)
+        let historyRowCount = min(historyRows.count, 4 - ratedRowCount, 3)
+        for index in 0 ..< max(historyRowCount, ratedRowCount) {
+            if index < historyRowCount {
+                rows.append(historyRows[index])
+            }
+            if index < ratedRowCount {
+                rows.append(ratedRows[index])
+            }
         }
 
         let newItems = unique(newTitles).prefix(rowLength).map { item($0, withReason: false) }
@@ -218,7 +345,12 @@ struct DiscoverEngine {
             rows.append(DiscoverRow(kind: .comingSoon, title: L10n.discoverComingSoon, items: Array(comingItems)))
         }
 
-        return Feed(hero: topItems.first ?? trendingItems.first, rows: rows, libraryItemIDs: library.itemIDsByKey)
+        return Feed(
+            hero: topItems.first ?? trendingItems.first,
+            rows: rows,
+            libraryItemIDs: library.itemIDsByKey,
+            taste: taste
+        )
     }
 
     // MARK: - Library
@@ -315,32 +447,6 @@ struct DiscoverEngine {
     }
 
     // MARK: - Helpers
-
-    /// Library seeds plus "More Like This" titles, strongest first.
-    private func seedList(from library: Library) -> [Seed] {
-        let liked = profile.liked.values.map {
-            Seed(kind: $0.kind, tmdbID: $0.tmdbID, name: $0.title, weight: 0.8, lastActivity: nil, isLiked: true)
-        }
-        var seen = Set<String>()
-        return (library.seeds + liked)
-            .sorted { $0.weight > $1.weight }
-            .filter { seen.insert($0.key).inserted }
-    }
-
-    /// Genre preferences from seed genres (weighted) and explicit feedback, roughly in -1...1.
-    private func genreAffinity(seedDetails: [(Seed, TMDBDetails)]) -> [Int: Double] {
-        var totals: [Int: Double] = [:]
-        let totalWeight = max(1, seedDetails.map(\.0.weight).reduce(0, +))
-        for (seed, details) in seedDetails {
-            for genre in details.genres {
-                totals[genre.id, default: 0] += seed.weight / totalWeight
-            }
-        }
-        for (genre, adjustment) in profile.genreFeedback {
-            totals[genre, default: 0] += adjustment
-        }
-        return totals.mapValues { max(-1, min(1, $0)) }
-    }
 
     private func providers(for titles: [DiscoverTitle]) async -> [String: [DiscoverProvider]] {
         await withTaskGroup(of: (String, [DiscoverProvider]).self) { group in

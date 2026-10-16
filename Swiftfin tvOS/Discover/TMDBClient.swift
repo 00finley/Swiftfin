@@ -46,8 +46,9 @@ actor TMDBClient {
 
     // MARK: - Endpoints
 
-    func trending() async throws -> [DiscoverTitle] {
-        try await list("trending/all/week", kind: nil)
+    /// This week's trending movies and shows; TMDB returns 20 per page.
+    func trending(page: Int = 1) async throws -> [DiscoverTitle] {
+        try await list("trending/all/week", kind: nil, query: page > 1 ? ["page": String(page)] : [:])
     }
 
     /// Recently released or currently airing titles on the given services.
@@ -106,14 +107,33 @@ actor TMDBClient {
         return (response.results[region]?.flatrate ?? []).map(\.provider)
     }
 
-    /// Full details with images, keywords, recommendations, similar titles and providers in one request.
+    /// Full details with images, keywords, recommendations, similar titles, providers and videos in one request.
     func details(kind: DiscoverTitle.Kind, id: Int) async throws -> TMDBDetails {
         let ratings = kind == .tv ? "content_ratings" : "release_dates"
         let data = try await get("\(kind.rawValue)/\(id)", query: [
-            "append_to_response": "images,keywords,recommendations,similar,watch/providers,\(ratings)",
+            "append_to_response": "images,keywords,recommendations,similar,watch/providers,videos,\(ratings)",
             "include_image_language": "en,null",
+            "include_video_language": "en,null",
         ])
         return try TMDBDetails(data: data, kind: kind)
+    }
+
+    /// Backdrops and logos in English plus language-neutral ones, for card art.
+    ///
+    /// Not cached here (the artwork store keeps the pick) and cancellable: a card that scrolls away
+    /// before its turn in the request queue never hits the network.
+    func images(kind: DiscoverTitle.Kind, id: Int) async throws -> TMDBImages {
+        let url = requestURL("\(kind.rawValue)/\(id)/images", query: ["include_image_language": "en,null"])
+        let data = try await fetch(url, cancellable: true)
+        return try JSONDecoder().decode(TMDBImages.self, from: data)
+    }
+
+    /// Title, genres and keywords only (a small response), for taste and seed names.
+    func titleInfo(kind: DiscoverTitle.Kind, id: Int) async throws -> DiscoverTitleInfo {
+        let url = requestURL("\(kind.rawValue)/\(id)", query: ["append_to_response": "keywords"])
+        let data = try await fetch(url)
+        let details = try TMDBDetails(data: data, kind: kind)
+        return DiscoverTitleInfo(title: details.title, keywords: details.keywords)
     }
 
     func genres() async throws -> [Int: String] {
@@ -185,12 +205,16 @@ actor TMDBClient {
         )
     }
 
-    private func get(_ path: String, query: [String: String] = [:]) async throws -> Data {
+    private func requestURL(_ path: String, query: [String: String]) -> URL {
         var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         components.queryItems = (query.merging(["language": "en-US"]) { current, _ in current })
             .sorted { $0.key < $1.key }
             .map { URLQueryItem(name: $0.key, value: $0.value) }
-        let url = components.url!
+        return components.url!
+    }
+
+    private func get(_ path: String, query: [String: String] = [:]) async throws -> Data {
+        let url = requestURL(path, query: query)
         let key = url.absoluteString
 
         if let cached = memoryCache[key], Date.now.timeIntervalSince(cached.date) < cacheTTL {
@@ -214,11 +238,15 @@ actor TMDBClient {
         return data
     }
 
-    private func fetch(_ url: URL) async throws -> Data {
+    private func fetch(_ url: URL, cancellable: Bool = false) async throws -> Data {
         guard let token = Self.token else { throw URLError(.userAuthenticationRequired) }
 
         await acquire()
         defer { release() }
+
+        if cancellable {
+            try Task.checkCancellation()
+        }
 
         var request = URLRequest(url: url, timeoutInterval: 20)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -385,6 +413,27 @@ private struct GenreList: Decodable {
     let genres: [Genre]
 }
 
+/// `/movie|tv/{id}/images` (language-filtered).
+struct TMDBImages: Decodable {
+
+    struct Image: Decodable {
+        let file_path: String
+        let iso_639_1: String?
+        let vote_average: Double?
+        let vote_count: Int?
+        let width: Int?
+        let height: Int?
+
+        /// Best first: rating, then votes, then size.
+        static func isBetter(_ lhs: Image, _ rhs: Image) -> Bool {
+            (lhs.vote_average ?? 0, lhs.vote_count ?? 0, lhs.width ?? 0) > (rhs.vote_average ?? 0, rhs.vote_count ?? 0, rhs.width ?? 0)
+        }
+    }
+
+    let backdrops: [Image]?
+    let logos: [Image]?
+}
+
 /// Details for one title, decoded from a single appended request.
 struct TMDBDetails {
 
@@ -400,6 +449,8 @@ struct TMDBDetails {
     let certificationsByRegion: [String: String]
     let runtimeMinutes: Int?
     let seasons: Int?
+    /// YouTube video key of the best trailer (official, English, newest), else a teaser
+    let trailerKey: String?
 
     init(data: Data, kind: DiscoverTitle.Kind) throws {
         let raw = try JSONDecoder().decode(RawDetails.self, from: data)
@@ -437,6 +488,20 @@ struct TMDBDetails {
         certificationsByRegion = certifications
         runtimeMinutes = raw.runtime ?? raw.episode_run_time?.first
         seasons = raw.number_of_seasons
+        trailerKey = Self.bestTrailer(raw.videos?.results ?? [])?.key
+    }
+
+    private static func bestTrailer(_ videos: [RawDetails.Video]) -> RawDetails.Video? {
+        let youtube = videos.filter { $0.site == "YouTube" && $0.key.isNotEmpty }
+        func best(_ type: String) -> RawDetails.Video? {
+            youtube
+                .filter { $0.type == type }
+                .max { lhs, rhs in
+                    (lhs.official == true ? 1 : 0, lhs.iso_639_1 == "en" ? 1 : 0, lhs.published_at ?? "") <
+                        (rhs.official == true ? 1 : 0, rhs.iso_639_1 == "en" ? 1 : 0, rhs.published_at ?? "")
+                }
+        }
+        return best("Trailer") ?? best("Teaser")
     }
 }
 
@@ -464,6 +529,19 @@ private struct RawDetails: Decodable {
 
     struct Page: Decodable {
         let results: [RawTitle]
+    }
+
+    struct Video: Decodable {
+        let key: String
+        let site: String?
+        let type: String?
+        let official: Bool?
+        let iso_639_1: String?
+        let published_at: String?
+    }
+
+    struct Videos: Decodable {
+        let results: [Video]
     }
 
     struct ContentRatings: Decodable {
@@ -510,6 +588,7 @@ private struct RawDetails: Decodable {
     let watchProviders: ProvidersResponse?
     let content_ratings: ContentRatings?
     let release_dates: ReleaseDates?
+    let videos: Videos?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -533,6 +612,7 @@ private struct RawDetails: Decodable {
         case similar
         case content_ratings
         case release_dates
+        case videos
         case watchProviders = "watch/providers"
     }
 }

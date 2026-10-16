@@ -130,6 +130,8 @@ struct BrowseQuery: Hashable {
     }
 
     enum Sort: String, CaseIterable, Hashable {
+        /// Popular titles reranked by the user's taste
+        case forYou
         case popular
         case topRated
         case newest
@@ -138,7 +140,7 @@ struct BrowseQuery: Hashable {
     var categories: [BrowseCategory]
     var media: Media = .both
     var onMyServices = true
-    var sort: Sort = .popular
+    var sort: Sort = .forYou
 
     /// Adds a category; one from an exclusive group (an era, a language) replaces its sibling.
     mutating func add(_ category: BrowseCategory) {
@@ -266,7 +268,7 @@ struct BrowseQuery: Hashable {
             switch sort {
             case .topRated: minVotes = max(minVotes ?? 0, kind == .movie ? 300 : 150)
             case .newest: minVotes = max(minVotes ?? 0, 10)
-            case .popular: break
+            case .popular, .forYou: break
             }
         }
         if let minVotes, let maxVotes, minVotes > maxVotes {
@@ -288,7 +290,7 @@ struct BrowseQuery: Hashable {
         }
 
         query["sort_by"] = switch sort {
-        case .popular: "popularity.desc"
+        case .popular, .forYou: "popularity.desc"
         case .topRated: "vote_average.desc"
         case .newest: "\(dateKey).desc"
         }

@@ -92,7 +92,7 @@ final class DiscoverHomeViewModel: ViewModel, WithRefresh {
 // MARK: - Section
 
 /// Home's Discover rows, built from the shared feed:
-/// a tall feature row, Because You Watched, New on Your Services, Top 10 and Coming Soon.
+/// a tall feature row, Because You Watched / Loved / Liked, New on Your Services, Top 10 and Coming Soon.
 struct DiscoverHomeSection: View {
 
     private enum Style {
@@ -127,11 +127,12 @@ struct DiscoverHomeSection: View {
             shelves.append(Shelf(id: "featured", title: L10n.discoverTopPicks, style: .feature, items: Array(featured)))
         }
 
+        // Because You Watched / Loved / Liked, in the feed's alternating order
         let because = rows.filter {
-            if case .becauseYouWatched = $0.kind {
-                return true
+            switch $0.kind {
+            case .becauseYouWatched, .becauseYouRated: true
+            default: false
             }
-            return false
         }
         func standard(_ row: DiscoverRow?) {
             guard let row, row.items.isNotEmpty else { return }
