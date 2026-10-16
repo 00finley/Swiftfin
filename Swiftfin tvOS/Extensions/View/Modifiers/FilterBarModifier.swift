@@ -11,44 +11,46 @@ import SwiftUI
 
 struct FilterBarModifier: ViewModifier {
 
-    @Default(.Customization.Library.letterPickerOrientation)
-    private var letterPickerOrientation
+    @Default(.accentColor)
+    private var accentColor
 
-    @FocusState
-    private var focusedFilter: FilterTrack.FocusTarget?
+    @Router
+    private var router
 
     @ObservedObject
     var viewModel: FilterViewModel
 
     let types: [ItemFilterType]
 
-    private var edge: HorizontalEdge {
-        letterPickerOrientation == .trailing ? .leading : .trailing
-    }
-
+    /// One labeled entry point instead of a rail of unlabeled icons.
     @ViewBuilder
-    private var filters: some View {
-        VStack(spacing: 20) {
-            ForEach(subviews: FilterTrack(
-                viewModel: viewModel,
-                types: types,
-                focus: $focusedFilter,
-                style: .compact,
-                iconEdge: edge
-            )) { button in
-                Color.clear
-                    .frame(width: 64, height: 64)
-                    .overlay(alignment: edge == .leading ? .leading : .trailing) {
-                        button
-                    }
+    private var sortAndFilterMenu: some View {
+        Menu {
+            ForEach(types, id: \.self) { type in
+                Button(type.displayTitle, systemImage: type.systemImage) {
+                    router.route(to: .filter(type: type, viewModel: viewModel))
+                }
             }
+
+            if viewModel.hasActiveFilters {
+                Divider()
+
+                Button(L10n.reset, systemImage: "arrow.counterclockwise", role: .destructive) {
+                    viewModel.reset(filterType: nil)
+                }
+            }
+        } label: {
+            Label(
+                L10n.sortAndFilter,
+                systemImage: viewModel.hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease"
+            )
+            .font(.callout)
+            .fontWeight(.semibold)
+            .padding(.horizontal, 12)
         }
-        .scrollIfLargerThanContainer()
-        .frame(width: 64)
-        .coordinatedFocusScope(
-            $focusedFilter,
-            values: types.map(FilterTrack.FocusTarget.filter) + (viewModel.hasActiveFilters ? [.reset] : [])
-        )
+        .menuStyle(.button)
+        .buttonStyle(.capsule(selectionTint: accentColor, focusTint: .white))
+        .isSelected(viewModel.hasActiveFilters)
     }
 
     func body(content: Content) -> some View {
@@ -57,12 +59,12 @@ struct FilterBarModifier: ViewModifier {
         } else {
             content
                 .focusSection()
-                .safeAreaInset(edge: edge, alignment: .center, spacing: 0) {
-                    filters
-                        .coordinatedFocus(.secondary)
-                        .padding(edge.asEdgeSet, EdgeInsets.itemSpacing)
+                .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
+                    sortAndFilterMenu
+                        .focusSection()
+                        .edgePadding(.horizontal)
+                        .padding(.bottom, 24)
                 }
-                .ignoresSafeArea(.all, edges: edge.asEdgeSet)
         }
     }
 }

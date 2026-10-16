@@ -694,6 +694,14 @@ internal enum L10n {
   internal static let error = L10n.tr("Localizable", "error", fallback: "Error")
   /// Error details
   internal static let errorDetails = L10n.tr("Localizable", "errorDetails", fallback: "Error details")
+  /// This page lost its connection to your server.
+  internal static let errorItemLoadSessionChanged = L10n.tr("Localizable", "errorItemLoadSessionChanged", fallback: "This page lost its connection to your server.")
+  /// Select Retry to load it again.
+  internal static let errorItemLoadSessionChangedRecovery = L10n.tr("Localizable", "errorItemLoadSessionChangedRecovery", fallback: "Select Retry to load it again.")
+  /// This item couldn't be found.
+  internal static let errorItemNotFound = L10n.tr("Localizable", "errorItemNotFound", fallback: "This item couldn\'t be found.")
+  /// This item isn't available on your server.
+  internal static let errorItemUnavailable = L10n.tr("Localizable", "errorItemUnavailable", fallback: "This item isn\'t available on your server.")
   /// Evaluate
   internal static let evaluate = L10n.tr("Localizable", "evaluate", fallback: "Evaluate")
   /// Every
@@ -1720,6 +1728,8 @@ internal enum L10n {
   internal static let smart = L10n.tr("Localizable", "smart", fallback: "Smart")
   /// Sort
   internal static let sort = L10n.tr("Localizable", "sort", fallback: "Sort")
+  /// Sort & Filter
+  internal static let sortAndFilter = L10n.tr("Localizable", "sortAndFilter", fallback: "Sort & Filter")
   /// Sort name
   internal static let sortName = L10n.tr("Localizable", "sortName", fallback: "Sort name")
   /// Sort title
@@ -1802,6 +1812,8 @@ internal enum L10n {
   internal static let subtitleSize = L10n.tr("Localizable", "subtitleSize", fallback: "Subtitle size")
   /// Success
   internal static let success = L10n.tr("Localizable", "success", fallback: "Success")
+  /// Suggestions
+  internal static let suggestions = L10n.tr("Localizable", "suggestions", fallback: "Suggestions")
   /// Supplements
   internal static let supplements = L10n.tr("Localizable", "supplements", fallback: "Supplements")
   /// Media control

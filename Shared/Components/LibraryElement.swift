@@ -101,7 +101,7 @@ extension LibraryElement {
         #else
         let columnCount = switch libraryStyle.displayType {
         case .grid:
-            libraryStyle.posterDisplayType == .landscape ? 4 : 7
+            libraryStyle.posterDisplayType == .landscape ? 4 : 6
         case .list:
             libraryStyle.listColumnCount
         }

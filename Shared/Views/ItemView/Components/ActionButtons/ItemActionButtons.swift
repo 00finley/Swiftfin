@@ -179,6 +179,7 @@ struct ItemActionButtons: View {
                     Self.view(for: button)
                         .labelStyle(ItemActionButtonLabelStyle(activeColor: button.activeColor))
                         .focused(focusedButton, equals: button.id)
+                        .focusCaption(button.focusCaption, isVisible: focusedButton.wrappedValue == button.id)
                 }
 
                 if hasBarMenu {
@@ -196,6 +197,7 @@ struct ItemActionButtons: View {
                     .symbolRenderingMode(.monochrome)
                     .foregroundStyle(.primary, .secondary)
                     .focused(focusedButton, equals: ItemView.Component.menu)
+                    .focusCaption(L10n.menu, isVisible: focusedButton.wrappedValue == ItemView.Component.menu)
                 }
             }
             .frame(height: UIDevice.isTV ? 75 : 44)
@@ -260,6 +262,47 @@ extension ItemActionButtons {
             .withViewContext(.isInMenu)
             .symbolRenderingMode(.monochrome)
             .foregroundStyle(.primary)
+        }
+    }
+}
+
+private extension View {
+
+    /// Icon-only buttons name themselves while focused, like the Apple TV app (tvOS only).
+    @ViewBuilder
+    func focusCaption(_ title: String, isVisible: Bool) -> some View {
+        #if os(tvOS)
+        overlay(alignment: .bottom) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .fixedSize()
+                .shadow(color: .black.opacity(0.6), radius: 6)
+                .offset(y: 56)
+                .opacity(isVisible ? 1 : 0)
+                .animation(.easeOut(duration: 0.2), value: isVisible)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        #else
+        self
+        #endif
+    }
+}
+
+private extension ItemActionButton {
+
+    /// Names the action rather than the current state ("Favorite", not "Favorited").
+    var focusCaption: String {
+        switch self {
+        case .played:
+            L10n.markAsPlayed
+        case .favorited:
+            L10n.favorite
+        default:
+            displayTitle
         }
     }
 }
