@@ -191,6 +191,10 @@ final class UserSessionManager: ObservableObject {
     @MainActor
     func appDidEnterBackground() {
         Defaults[.backgroundTimeStamp] = Date.now
+
+        #if os(tvOS)
+        TopShelfSessionPublisher.refresh()
+        #endif
     }
 
     @MainActor
@@ -338,6 +342,10 @@ final class UserSessionManager: ObservableObject {
         }
 
         newSession?.didStart()
+
+        #if os(tvOS)
+        TopShelfSessionPublisher.publish(newSession)
+        #endif
     }
 
     private func resolveStoredSession() throws -> UserSession? {

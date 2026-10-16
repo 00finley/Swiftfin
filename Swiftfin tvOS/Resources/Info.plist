@@ -23,6 +23,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>glassfin</string>
 				<string>swiftfin</string>
 				<string>jellyfin</string>
 			</array>
@@ -45,6 +46,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>SwiftfinSharedKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)org.jellyfin.swiftfin.shared</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>NotoSansCJK-Regular.ttc</string>
