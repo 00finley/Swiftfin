@@ -1408,6 +1408,8 @@ internal enum L10n {
   internal static let quickConnectCode = L10n.tr("Localizable", "quickConnectCode", fallback: "Quick Connect code")
   /// Enter the 6 digit code from your other device.
   internal static let quickConnectCodeInstruction = L10n.tr("Localizable", "quickConnectCodeInstruction", fallback: "Enter the 6 digit code from your other device.")
+  /// Scan with your phone to approve
+  internal static let quickConnectScanToApprove = L10n.tr("Localizable", "quickConnectScanToApprove", fallback: "Scan with your phone to approve")
   /// Open the Jellyfin app on your phone or web browser and sign in with your account
   internal static let quickConnectStep1 = L10n.tr("Localizable", "quickConnectStep1", fallback: "Open the Jellyfin app on your phone or web browser and sign in with your account")
   /// Open the user menu and go to the Quick Connect page
