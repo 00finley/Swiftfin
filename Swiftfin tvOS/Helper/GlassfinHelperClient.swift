@@ -13,14 +13,17 @@ enum GlassfinHelperError: LocalizedError {
 
     case notConfigured
     case unreachable
+    /// No answer within the request's timeout (the Mac is up but slow, or the request was lost).
+    case timedOut
     case unauthorized
-    /// The helper's `{"error": code, "message": sentence}` body, with the HTTP status.
-    case server(status: Int, code: String?, message: String?)
+    /// The helper's `{"error": code, "message": sentence}` body, with the HTTP status and
+    /// `Retry-After` in seconds when the helper sent one (429 caps, 503 busy).
+    case server(status: Int, code: String?, message: String?, retryAfter: TimeInterval? = nil)
     case invalidResponse
 
     var errorDescription: String? {
         switch self {
-        case let .server(_, _, message?): message
+        case let .server(_, _, message?, _): message
         default: L10n.glassfinHelperUnavailable
         }
     }
@@ -142,11 +145,14 @@ actor GlassfinHelperClient {
         let response: URLResponse
         do {
             (data, response) = try await session.data(for: request)
+        } catch let error as URLError where error.code == .timedOut {
+            throw GlassfinHelperError.timedOut
         } catch {
             throw GlassfinHelperError.unreachable
         }
 
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let http = response as? HTTPURLResponse
+        let status = http?.statusCode ?? 0
         switch status {
         case 200 ..< 300:
             return data
@@ -154,7 +160,9 @@ actor GlassfinHelperClient {
             throw GlassfinHelperError.unauthorized
         default:
             let body = try? JSONDecoder().decode(ErrorBody.self, from: data)
-            throw GlassfinHelperError.server(status: status, code: body?.error, message: body?.message)
+            let retryAfter = (http?.value(forHTTPHeaderField: "Retry-After"))
+                .flatMap { TimeInterval($0.trimmingCharacters(in: .whitespaces)) }
+            throw GlassfinHelperError.server(status: status, code: body?.error, message: body?.message, retryAfter: retryAfter)
         }
     }
 }

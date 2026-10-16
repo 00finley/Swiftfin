@@ -18,6 +18,8 @@ struct DiscoverCard: View {
     var viewModel: DiscoverViewModel
     /// 400 by default; 320 (5 across) on Home, 410 (4 across) in grids
     var width: CGFloat = DiscoverCard.width
+    /// More than one line for longer captions (Ask Glassfin's "why")
+    var subtitleLineLimit = 1
     let action: () -> Void
 
     @ObservedObject
@@ -87,8 +89,9 @@ struct DiscoverCard: View {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.62))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .lineLimit(subtitleLineLimit)
+                        .minimumScaleFactor(subtitleLineLimit == 1 ? 0.8 : 1)
+                        .fixedSize(horizontal: false, vertical: subtitleLineLimit > 1)
                 }
             }
         }

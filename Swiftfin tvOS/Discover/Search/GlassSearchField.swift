@@ -20,6 +20,16 @@ struct GlassSearchField: View {
     var text: String
     let prompt: String
     var clearLabel: String = L10n.categoriesClearSearch
+    /// The leading symbol ("sparkles" for Ask Glassfin)
+    var systemImage: String = "magnifyingglass"
+    var returnKeyType: UIReturnKeyType = .search
+    /// Natural-language questions (Ask Glassfin) keep autocorrect; title searches don't
+    var autocorrects: Bool = false
+    var accessibilityID: String = "glassSearchField"
+    /// The keyboard's return key
+    var onSubmit: (() -> Void)?
+    /// The keyboard closed (return, Menu or swipe), with the final text in `text`
+    var onEndEditing: (() -> Void)?
 
     @StateObject
     private var keyboard = SearchKeyboardController()
@@ -30,7 +40,7 @@ struct GlassSearchField: View {
                 keyboard.begin()
             } label: {
                 HStack(spacing: 22) {
-                    Image(systemName: "magnifyingglass")
+                    Image(systemName: systemImage)
                         .font(.system(size: 30, weight: .semibold))
                         .accessibilityHidden(true)
 
@@ -50,12 +60,20 @@ struct GlassSearchField: View {
             .buttonStyle(GlassSearchFieldStyle())
             .accessibilityLabel(prompt)
             .accessibilityValue(text)
-            .accessibilityIdentifier("glassSearchField")
+            .accessibilityIdentifier(accessibilityID)
             .background {
-                SearchKeyboardBridge(text: $text, prompt: prompt, controller: keyboard)
-                    .frame(width: 1, height: 1)
-                    .opacity(0.01)
-                    .accessibilityHidden(true)
+                SearchKeyboardBridge(
+                    text: $text,
+                    prompt: prompt,
+                    controller: keyboard,
+                    returnKeyType: returnKeyType,
+                    autocorrects: autocorrects,
+                    onSubmit: onSubmit,
+                    onEndEditing: onEndEditing
+                )
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
+                .accessibilityHidden(true)
             }
 
             if text.isNotEmpty {
@@ -144,6 +162,10 @@ private struct SearchKeyboardBridge: UIViewRepresentable {
     var text: String
     let prompt: String
     let controller: SearchKeyboardController
+    var returnKeyType: UIReturnKeyType = .search
+    var autocorrects = false
+    var onSubmit: (() -> Void)?
+    var onEndEditing: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
@@ -153,10 +175,10 @@ private struct SearchKeyboardBridge: UIViewRepresentable {
         let field = KeyboardOnlyTextField()
         field.borderStyle = .none
         field.placeholder = prompt
-        field.returnKeyType = .search
-        field.autocorrectionType = .no
-        field.autocapitalizationType = .none
-        field.spellCheckingType = .no
+        field.returnKeyType = returnKeyType
+        field.autocorrectionType = autocorrects ? .default : .no
+        field.autocapitalizationType = autocorrects ? .sentences : .none
+        field.spellCheckingType = autocorrects ? .default : .no
         field.text = text
         field.isAccessibilityElement = false
         field.delegate = context.coordinator
@@ -173,6 +195,8 @@ private struct SearchKeyboardBridge: UIViewRepresentable {
 
     func updateUIView(_ field: UITextField, context: Context) {
         context.coordinator.text = $text
+        context.coordinator.onSubmit = onSubmit
+        context.coordinator.onEndEditing = onEndEditing
         // While the keyboard is up the field is the source of truth (tvOS may commit its text late)
         if !field.isEditing, field.text != text {
             field.text = text
@@ -184,6 +208,8 @@ private struct SearchKeyboardBridge: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
 
         var text: Binding<String>
+        var onSubmit: (() -> Void)?
+        var onEndEditing: (() -> Void)?
         /// The text as last typed; Menu on the tvOS keyboard reverts the field, but the query should stay.
         private var lastEdit: String?
 
@@ -221,9 +247,12 @@ private struct SearchKeyboardBridge: UIViewRepresentable {
                 field.text = lastEdit
             }
             update(from: field)
+            onEndEditing?()
         }
 
         func textFieldShouldReturn(_ field: UITextField) -> Bool {
+            update(from: field)
+            onSubmit?()
             field.resignFirstResponder()
             return true
         }
