@@ -89,6 +89,12 @@ extension SeriesEpisodeContentGroup {
             case .error:
                 [seasonViewModel.error.map(EpisodeElement.error) ?? .error(ErrorMessage(L10n.unknownError))]
 
+            case .refreshing where seasonViewModel.elements.isNotEmpty:
+                // Keep the current cards while refreshing. Swapping in placeholders removed the
+                // focused card, so focus fell back to the top of the page (the server refreshes
+                // seasons whenever the library changes, e.g. while Sonarr imports episodes).
+                seasonViewModel.elements.map(EpisodeElement.episode)
+
             case .initial, .refreshing:
                 EpisodeElement.loadingElements
             }
@@ -115,7 +121,13 @@ extension SeriesEpisodeContentGroup {
                     seasonViewModel.refresh()
                 }
             }
-            .scrollDisabled(seasonViewModel.state != .content)
+            .scrollDisabled(elements.contains {
+                if case .loading = $0 {
+                    true
+                } else {
+                    false
+                }
+            })
         }
     }
 
@@ -143,9 +155,13 @@ extension SeriesEpisodeContentGroup {
 
         private func isFocusable(_ element: EpisodeElement) -> Bool {
             #if os(tvOS)
-            hasFocusedRow || preferredElementID == nil || element.id == preferredElementID
+            // Placeholders are replaced when episodes arrive; focus on one would be lost
+            if case .loading = element {
+                return false
+            }
+            return hasFocusedRow || preferredElementID == nil || element.id == preferredElementID
             #else
-            true
+            return true
             #endif
         }
 

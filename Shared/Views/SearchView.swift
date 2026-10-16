@@ -26,6 +26,10 @@ struct SearchView: View {
     private var requestable = SearchDiscoverViewModel()
     @StateObject
     private var discoverFeed = DiscoverViewModel.shared
+
+    /// Ask Glassfin (glassfin-helper) under the search field; hidden when the helper isn't configured
+    @Default(.Discover.askEnabled)
+    private var askEnabled
     #endif
 
     @State
@@ -82,6 +86,18 @@ struct SearchView: View {
         ScrollView {
             VStack(spacing: 0) {
                 #if os(tvOS)
+                if AskGlassfin.isAvailable(enabled: askEnabled) {
+                    AskSearchAction(query: searchQuery) {
+                        let question = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                        router.route(to: .askGlassfin(query: question.isEmpty ? nil : question))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .edgePadding(.horizontal)
+                    .padding(.top, 10)
+                    .padding(.bottom, showsFilters ? 0 : 30)
+                    .focusSection()
+                }
+
                 if showsFilters {
                     ScrollView(.horizontal) {
                         HStack(spacing: 20) {
@@ -168,7 +184,12 @@ struct SearchView: View {
         #if os(tvOS)
         .modifier(SearchSafeAreaModifier())
         .onReceive(viewModel.filterViewModel.$currentFilters) { filters in
-            searchQuery = filters.query ?? ""
+            // The filter stores the query trimmed; writing that back would eat the space just typed
+            // ("something like" → "somethinglike"), so only sync real changes (e.g. Reset)
+            let query = filters.query ?? ""
+            if query != searchQuery.trimmingCharacters(in: .whitespacesAndNewlines) {
+                searchQuery = query
+            }
         }
         #endif
         #if os(iOS)

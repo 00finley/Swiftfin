@@ -24,6 +24,8 @@ struct CategoriesView: View {
     private var providers
     @Default(.Discover.region)
     private var region
+    @Default(.Discover.askEnabled)
+    private var askEnabled
 
     @State
     private var logos: [Int: String] = [:]
@@ -82,6 +84,12 @@ struct CategoriesView: View {
     private var header: some View {
         HStack(spacing: 24) {
             GlassSearchField(text: $search.text, prompt: L10n.categoriesSearchPrompt)
+
+            if AskGlassfin.isAvailable(enabled: askEnabled) {
+                AskGlassfinButton {
+                    router.route(to: .askGlassfin())
+                }
+            }
 
             Button {
                 router.route(to: .discoverSettings)

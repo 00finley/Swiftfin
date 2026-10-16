@@ -32,6 +32,16 @@ struct DiscoverSettingsView: View {
     @Default(.Discover.profile)
     private var profile
 
+    @Default(.Discover.askEnabled)
+    private var askEnabled
+    @Default(.Discover.askRemaining)
+    private var askRemaining
+    /// From `/health` when the last count is from an earlier day
+    @State
+    private var freshAskRemaining: Int?
+    @State
+    private var isCheckingAsk = false
+
     @Router
     private var router
 
@@ -87,6 +97,10 @@ struct DiscoverSettingsView: View {
                 Text(L10n.search)
             } footer: {
                 Text(L10n.searchIncludeRequestableDescription)
+            }
+
+            if AskGlassfin.isConfigured {
+                askSection
             }
 
             Section(L10n.discoverStreamingServices) {
@@ -187,5 +201,62 @@ struct DiscoverSettingsView: View {
             }
         }
         .navigationTitle(L10n.discover)
+    }
+
+    // MARK: - Ask Glassfin
+
+    /// What's left today: the last count the helper reported, or a fresh day's cap from `/health`.
+    private var askRemainingText: String {
+        if let askRemaining, askRemaining.isToday {
+            return "\(askRemaining.count)"
+        }
+        if let freshAskRemaining {
+            return "\(freshAskRemaining)"
+        }
+        return "—"
+    }
+
+    private func refreshAskRemaining() {
+        guard !isCheckingAsk else { return }
+
+        isCheckingAsk = true
+        Task {
+            freshAskRemaining = await AskGlassfin.health()?.freshRemaining
+            isCheckingAsk = false
+        }
+    }
+
+    private var askSection: some View {
+        Section {
+            Toggle(isOn: $askEnabled) {
+                Label(L10n.askGlassfin, systemImage: "sparkles")
+            }
+
+            if askEnabled {
+                Button(action: refreshAskRemaining) {
+                    HStack {
+                        Text(L10n.askGlassfinQuestionsLeft)
+                        Spacer()
+                        if isCheckingAsk {
+                            ProgressView()
+                        } else {
+                            Text(askRemainingText)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                }
+                .accessibilityIdentifier("settings.askRemaining")
+                .task {
+                    if askRemaining?.isToday != true {
+                        refreshAskRemaining()
+                    }
+                }
+            }
+        } header: {
+            Text(L10n.askGlassfin)
+        } footer: {
+            Text(L10n.askGlassfinDescription)
+        }
     }
 }

@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Combine
 import JellyfinAPI
 import SwiftUI
 
@@ -54,6 +55,31 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
             viewModel.elements.first { $0.id == selection }
         }
 
+        /// The last season that finished loading. When the item changes on the server (an import, a
+        /// watched state), the page rebuilds this group with fresh season view models that start out
+        /// empty; showing placeholders then removed the focused card and focus jumped back to the
+        /// top of the page. Until the new season has content, keep showing this one.
+        @State
+        private var lastLoadedSeason: PagingLibraryViewModel<EpisodeLibrary>?
+
+        private var displayedSeasonViewModel: PagingLibraryViewModel<EpisodeLibrary>? {
+            if let selectedSeasonViewModel, selectedSeasonViewModel.state == .content {
+                return selectedSeasonViewModel
+            }
+            if let lastLoadedSeason, lastLoadedSeason.id == selection {
+                return lastLoadedSeason
+            }
+            return selectedSeasonViewModel
+        }
+
+        private func rememberLoadedSeason() {
+            if let selectedSeasonViewModel, selectedSeasonViewModel.state == .content,
+               lastLoadedSeason !== selectedSeasonViewModel
+            {
+                lastLoadedSeason = selectedSeasonViewModel
+            }
+        }
+
         private var seasonSelectorView: some View {
             SeasonSelector(
                 seasons: Array(viewModel.elements),
@@ -87,9 +113,9 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
         @ViewBuilder
         var body: some View {
             Group {
-                if let selectedSeasonViewModel {
+                if let displayedSeasonViewModel {
                     SeasonEpisodesView(
-                        seasonViewModel: selectedSeasonViewModel,
+                        seasonViewModel: displayedSeasonViewModel,
                         playButtonItem: playButtonItem
                     ) {
                         seasonSelectorView
@@ -111,6 +137,14 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
             .onChange(of: selection) {
                 refreshSelectedSeasonIfNeeded()
             }
+            // Swap to a rebuilt season once it has loaded (nothing else observes it while hidden)
+            .onReceive(
+                (selectedSeasonViewModel?.objectWillChange.eraseToAnyPublisher() ?? Combine.Empty<Void, Never>().eraseToAnyPublisher())
+                    .receive(on: RunLoop.main)
+            ) { _ in
+                rememberLoadedSeason()
+            }
+            .onAppear(perform: rememberLoadedSeason)
         }
     }
 }

@@ -142,6 +142,92 @@ internal enum L10n {
   internal static let artists = L10n.tr("Localizable", "artists", fallback: "Artists")
   /// Ascending
   internal static let ascending = L10n.tr("Localizable", "ascending", fallback: "Ascending")
+  /// Ask Glassfin
+  internal static let askGlassfin = L10n.tr("Localizable", "askGlassfin", fallback: "Ask Glassfin")
+  /// Ask
+  internal static let askGlassfinAsk = L10n.tr("Localizable", "askGlassfinAsk", fallback: "Ask")
+  /// Glassfin is answering another question — trying again…
+  internal static let askGlassfinBusy = L10n.tr("Localizable", "askGlassfinBusy", fallback: "Glassfin is answering another question — trying again…")
+  /// Press Menu to cancel
+  internal static let askGlassfinCancelHint = L10n.tr("Localizable", "askGlassfinCancelHint", fallback: "Press Menu to cancel")
+  /// Questions you've asked before still work, and their answers come back instantly.
+  internal static let askGlassfinCapCached = L10n.tr("Localizable", "askGlassfinCapCached", fallback: "Questions you\'ve asked before still work, and their answers come back instantly.")
+  /// Your household has used all of today's questions. They reset at %@.
+  internal static func askGlassfinCapGlobal(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "askGlassfinCapGlobal", String(describing: p1), fallback: "Your household has used all of today\'s questions. They reset at %@.")
+  }
+  /// You've used all of today's questions. They reset at %@.
+  internal static func askGlassfinCapProfile(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "askGlassfinCapProfile", String(describing: p1), fallback: "You\'ve used all of today\'s questions. They reset at %@.")
+  }
+  /// That's All for Today
+  internal static let askGlassfinCapTitle = L10n.tr("Localizable", "askGlassfinCapTitle", fallback: "That\'s All for Today")
+  /// Ask for recommendations in your own words from Search or Categories. Claude answers on your Mac. Each new question counts toward a daily limit; asking one again is free.
+  internal static let askGlassfinDescription = L10n.tr("Localizable", "askGlassfinDescription", fallback: "Ask for recommendations in your own words from Search or Categories. Claude answers on your Mac. Each new question counts toward a daily limit; asking one again is free.")
+  /// Ask Glassfin is turned off on the server Mac.
+  internal static let askGlassfinDisabled = L10n.tr("Localizable", "askGlassfinDisabled", fallback: "Ask Glassfin is turned off on the server Mac.")
+  /// Ask Glassfin Is Turned Off
+  internal static let askGlassfinDisabledTitle = L10n.tr("Localizable", "askGlassfinDisabledTitle", fallback: "Ask Glassfin Is Turned Off")
+  /// Something went wrong. Try asking again.
+  internal static let askGlassfinFailed = L10n.tr("Localizable", "askGlassfinFailed", fallback: "Something went wrong. Try asking again.")
+  /// Glassfin Couldn't Answer
+  internal static let askGlassfinFailedTitle = L10n.tr("Localizable", "askGlassfinFailedTitle", fallback: "Glassfin Couldn\'t Answer")
+  /// Ask Glassfin only works when this Apple TV is on your home network.
+  internal static let askGlassfinHomeNetwork = L10n.tr("Localizable", "askGlassfinHomeNetwork", fallback: "Ask Glassfin only works when this Apple TV is on your home network.")
+  /// Not on Your Home Network
+  internal static let askGlassfinHomeNetworkTitle = L10n.tr("Localizable", "askGlassfinHomeNetworkTitle", fallback: "Not on Your Home Network")
+  /// Glassfin's picks couldn't be found. Try asking a different way.
+  internal static let askGlassfinNoMatches = L10n.tr("Localizable", "askGlassfinNoMatches", fallback: "Glassfin\'s picks couldn\'t be found. Try asking a different way.")
+  /// No Matches
+  internal static let askGlassfinNoMatchesTitle = L10n.tr("Localizable", "askGlassfinNoMatchesTitle", fallback: "No Matches")
+  /// Ask Glassfin is offline (the server Mac may be asleep).
+  internal static let askGlassfinOffline = L10n.tr("Localizable", "askGlassfinOffline", fallback: "Ask Glassfin is offline (the server Mac may be asleep).")
+  /// Ask Glassfin Is Offline
+  internal static let askGlassfinOfflineTitle = L10n.tr("Localizable", "askGlassfinOfflineTitle", fallback: "Ask Glassfin Is Offline")
+  /// Describe what you're in the mood for
+  internal static let askGlassfinPrompt = L10n.tr("Localizable", "askGlassfinPrompt", fallback: "Describe what you\'re in the mood for")
+  /// Questions Left Today
+  internal static let askGlassfinQuestionsLeft = L10n.tr("Localizable", "askGlassfinQuestionsLeft", fallback: "Questions Left Today")
+  /// “%@”
+  internal static func askGlassfinQuoted(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "askGlassfinQuoted", String(describing: p1), fallback: "“%@”")
+  }
+  /// Recent Questions
+  internal static let askGlassfinRecent = L10n.tr("Localizable", "askGlassfinRecent", fallback: "Recent Questions")
+  /// Trying again in %@ s
+  internal static func askGlassfinRetryingIn(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "askGlassfinRetryingIn", String(describing: p1), fallback: "Trying again in %@ s")
+  }
+  /// Describe a mood, a show you love or how much time you have
+  internal static let askGlassfinSearchHint = L10n.tr("Localizable", "askGlassfinSearchHint", fallback: "Describe a mood, a show you love or how much time you have")
+  /// Something like %@
+  internal static func askGlassfinSomethingLike(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "askGlassfinSomethingLike", String(describing: p1), fallback: "Something like %@")
+  }
+  /// Still thinking. Good picks take a moment.
+  internal static let askGlassfinStillThinking = L10n.tr("Localizable", "askGlassfinStillThinking", fallback: "Still thinking. Good picks take a moment.")
+  /// Animated for adults
+  internal static let askGlassfinSuggestionAnimated = L10n.tr("Localizable", "askGlassfinSuggestionAnimated", fallback: "Animated for adults")
+  /// Cozy and short
+  internal static let askGlassfinSuggestionCozy = L10n.tr("Localizable", "askGlassfinSuggestionCozy", fallback: "Cozy and short")
+  /// Make me laugh
+  internal static let askGlassfinSuggestionLaugh = L10n.tr("Localizable", "askGlassfinSuggestionLaugh", fallback: "Make me laugh")
+  /// Something like a show I love
+  internal static let askGlassfinSuggestionLove = L10n.tr("Localizable", "askGlassfinSuggestionLove", fallback: "Something like a show I love")
+  /// Under 2 hours
+  internal static let askGlassfinSuggestionShort = L10n.tr("Localizable", "askGlassfinSuggestionShort", fallback: "Under 2 hours")
+  /// Taking longer than usual. Glassfin may be finishing another question first.
+  internal static let askGlassfinTakingAWhile = L10n.tr("Localizable", "askGlassfinTakingAWhile", fallback: "Taking longer than usual. Glassfin may be finishing another question first.")
+  /// Asking Glassfin…
+  internal static let askGlassfinThinking = L10n.tr("Localizable", "askGlassfinThinking", fallback: "Asking Glassfin…")
+  /// Glassfin took too long to answer. Try again in a minute.
+  internal static let askGlassfinTimedOut = L10n.tr("Localizable", "askGlassfinTimedOut", fallback: "Glassfin took too long to answer. Try again in a minute.")
+  /// Try Again
+  internal static let askGlassfinTryAgain = L10n.tr("Localizable", "askGlassfinTryAgain", fallback: "Try Again")
+  /// Try Asking
+  internal static let askGlassfinTryAsking = L10n.tr("Localizable", "askGlassfinTryAsking", fallback: "Try Asking")
+  /// The helper didn't accept this Apple TV's token. Check GLASSFIN_HELPER_TOKEN in the build settings.
+  internal static let askGlassfinUnauthorized = L10n.tr("Localizable", "askGlassfinUnauthorized", fallback: "The helper didn\'t accept this Apple TV\'s token. Check GLASSFIN_HELPER_TOKEN in the build settings.")
   /// As many as possible
   internal static let asManyAsPossible = L10n.tr("Localizable", "asManyAsPossible", fallback: "As many as possible")
   /// Aspect fill
