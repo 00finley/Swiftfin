@@ -15,9 +15,12 @@ struct ContentGroupParentOption {
         case ignoreSafeAreaTop
         /// The first group's preview is playing full screen; other groups fade out.
         case immersiveHero
-        /// The hero has focus: keep the page scrolled to the top so its row stays cut off by the
-        /// bottom edge, like the Apple TV app, instead of scrolling the focused card into view.
+        /// The hero's buttons have focus: keep the page scrolled to the top so its row stays cut off
+        /// by the bottom edge, like the Apple TV app, instead of scrolling the focused card into view.
         case pinsToTop
+        /// The hero's row has focus: hold the page at the hero's row position, so the whole row is
+        /// on screen and the next group's title peeks below it.
+        case pinsHeroRow
     }
 }
 

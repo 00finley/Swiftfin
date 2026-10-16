@@ -44,6 +44,24 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
         _viewModel = StateObject(wrappedValue: ContentGroupViewModel(provider: provider))
     }
 
+    #if os(tvOS)
+    private enum HeroScrollPin {
+        case top
+        case row
+    }
+
+    /// Where the hero holds the page while it has focus; nil when focus is elsewhere.
+    private var heroScrollPin: HeroScrollPin? {
+        if contentGroupOptions.contains(.pinsToTop) {
+            .top
+        } else if contentGroupOptions.contains(.pinsHeroRow) {
+            .row
+        } else {
+            nil
+        }
+    }
+    #endif
+
     @ViewBuilder
     private var contentView: some View {
         ScrollViewReader { proxy in
@@ -66,24 +84,35 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
             }
             #if os(tvOS)
             .scrollPosition($scrollPosition)
-                .onChange(of: contentGroupOptions.contains(.pinsToTop)) { _, isPinned in
-                    if isPinned {
-                        withAnimation(.easeOut(duration: 0.3)) {
+                .onChange(of: heroScrollPin) { _, pin in
+                    // Hero buttons: the true top. Hero row: the row fully on screen with the next
+                    // group's title peeking below (see CinematicHeroLayout.rowFocusedScrollOffset).
+                    switch pin {
+                    case .top:
+                        withAnimation(CinematicHeroLayout.scrollAnimation) {
                             scrollPosition.scrollTo(edge: .top)
                         }
+
+                    case .row:
+                        withAnimation(CinematicHeroLayout.scrollAnimation) {
+                            scrollPosition.scrollTo(y: CinematicHeroLayout.rowFocusedScrollOffset)
+                        }
+
+                    case nil: ()
                     }
                 }
                 .onChange(of: focusCoordinator.focusedIDs) { oldValue, newValue in
                     // While the hero is pinned, scrolling is disabled, so focus moving down to a later
-                    // group doesn't scroll it into view by itself
-                    guard !contentGroupOptions.contains(.pinsToTop),
-                          let firstID = viewModel.groups.first?.id,
+                    // group doesn't scroll it into view by itself. Scroll to the group's anchor, one
+                    // group spacing above it, so its header stays inside the top safe area. (The
+                    // hero's preference still says pinned at this point; it updates a pass later.)
+                    guard let firstID = viewModel.groups.first?.id,
                           oldValue.contains(firstID),
                           let target = viewModel.groups.dropFirst().first(where: { newValue.contains($0.id) })
                     else { return }
 
-                    withAnimation(.easeOut(duration: 0.35)) {
-                        proxy.scrollTo(target.id, anchor: .top)
+                    withAnimation(CinematicHeroLayout.scrollAnimation) {
+                        proxy.scrollTo(ContentGroupVStack.scrollAnchorID(for: target.id), anchor: .top)
                     }
                 }
             #endif
@@ -98,7 +127,7 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
             #endif
             .scrollIndicators(.hidden)
             #if os(tvOS)
-            .scrollDisabled(contentGroupOptions.contains(.pinsToTop))
+            .scrollDisabled(heroScrollPin != nil)
             // Groups that draw under the top edge start at the true top, not below the safe area
             .contentMargins(.top, contentGroupOptions.contains(.ignoreSafeAreaTop) ? 0 : nil, for: .scrollContent)
             #endif

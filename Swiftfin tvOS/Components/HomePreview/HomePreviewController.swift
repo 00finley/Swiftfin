@@ -110,12 +110,27 @@ final class HomePreviewController: ObservableObject {
         scheduleImmersive()
     }
 
-    /// Current preview position for the item, if its video is on screen.
-    func currentTicks(for itemID: String?) -> Int? {
-        guard let itemID, itemID == visibleItemID else { return nil }
+    /// Whether the item's preview video is on screen.
+    func isShowing(_ itemID: String?) -> Bool {
+        itemID != nil && itemID == visibleItemID
+    }
+
+    /// Current preview position for the item, if its video is on screen: where full playback should
+    /// continue from when the user clicks in.
+    func continuationTicks(for itemID: String?) -> Int? {
+        guard isShowing(itemID) else { return nil }
 
         let seconds = player.currentTime().seconds
         guard seconds.isFinite, seconds > 0 else { return nil }
+
+        logger.info(
+            "Continuing Home preview into playback",
+            metadata: [
+                "itemID": .string(itemID ?? ""),
+                "previewStartSeconds": .stringConvertible(startSeconds),
+                "positionSeconds": .stringConvertible(seconds),
+            ]
+        )
 
         return Int(seconds * 10_000_000)
     }
@@ -202,6 +217,14 @@ final class HomePreviewController: ObservableObject {
                 withAnimation(self.reduceMotion ? nil : .easeOut(duration: 0.6)) {
                     self.visibleItemID = itemID
                 }
+                self.logger.info(
+                    "Home preview visible",
+                    metadata: [
+                        "itemID": .string(itemID),
+                        "previewStartSeconds": .stringConvertible(self.startSeconds),
+                        "positionSeconds": .stringConvertible(time.seconds),
+                    ]
+                )
                 self.scheduleImmersive()
             }
         }
