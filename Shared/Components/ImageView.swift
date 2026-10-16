@@ -32,7 +32,19 @@ struct ImageView<_Image: View, Placeholder: View, Failure: View>: View {
                     placeholder(currentSource)
                 } else if let container = state.imageContainer {
                     if let data = container.data {
+                        #if os(tvOS)
+                        // SVGKit crashes on Apple TV: +[SVGLength initialize] asserts on any device
+                        // model it doesn't know (every Apple TV), and Debug builds keep assertions.
+                        // TVDB serves some images as SVG, so treat them as a failed source and fall
+                        // back to the next one (or the placeholder text).
+                        let _ = data
+                        failure
+                            .onAppear {
+                                sources.removeFirstSafe()
+                            }
+                        #else
                         FastSVGView(data: data)
+                        #endif
                     } else {
                         image(container.image)
                     }
