@@ -129,6 +129,73 @@ extension ItemView {
                 #endif
             }
 
+            #if os(tvOS)
+            /// Cinematic episode layout: title block, description and a single button row, bottom-leading.
+            @ViewBuilder
+            private var episodeOverlay: some View {
+                VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let parentID = provider.item.parentRootID, let parentTitle = provider.item.parentTitle {
+                            ParentButton(title: parentTitle, id: parentID)
+                        }
+
+                        Text(provider.item.displayTitle)
+                            .font(.system(size: 72, weight: .bold))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+
+                        DotHStack {
+                            if let seasonEpisodeLabel = provider.item.seasonEpisodeLabel {
+                                Text(seasonEpisodeLabel)
+                            }
+
+                            if let runtime = provider.item.runtime {
+                                Text(runtime, format: .hourMinuteAbbreviated)
+                            }
+
+                            if let premiereYear = provider.item.premiereDateYear {
+                                Text(premiereYear)
+                            }
+
+                            if let officialRating = provider.item.officialRating {
+                                Text(officialRating)
+                            }
+                        }
+                        .font(.callout)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    if let overview = provider.item.overview, overview.isNotEmpty {
+                        Text(overview)
+                            .font(.callout)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: 1000, alignment: .leading)
+                    }
+
+                    HStack(alignment: .center, spacing: 40) {
+                        ItemView.ActionBar(
+                            provider: provider,
+                            alignment: .leading,
+                            axis: .horizontal
+                        )
+
+                        ItemView.AttributesHStack(
+                            attributes: attributes,
+                            item: provider.item,
+                            selectedMediaSource: provider.mediaPlayerItemProvider?.mediaSource,
+                            alignment: .leading
+                        )
+                        .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .focusSection()
+            }
+            #endif
+
             #if !os(tvOS)
             private func resolveColor(from image: UIImage, binding: Binding<Color>) {
                 Task.detached(priority: .utility) {
@@ -144,10 +211,16 @@ extension ItemView {
             var body: some View {
                 #if os(tvOS)
                 CinematicContentGroupContainer {
-                    overlay
-                        .edgePadding(.horizontal)
-                        .frame(maxWidth: .infinity)
-                        .colorScheme(.dark)
+                    Group {
+                        if provider.item.type == .episode {
+                            episodeOverlay
+                        } else {
+                            overlay
+                        }
+                    }
+                    .edgePadding(.horizontal)
+                    .frame(maxWidth: .infinity)
+                    .colorScheme(.dark)
                 }
                 #else
                 AlternateLayoutView(alignment: .bottom) {

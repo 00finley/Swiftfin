@@ -7,6 +7,7 @@
 //
 
 import Defaults
+import JellyfinAPI
 import SwiftUI
 
 // TODO: Add scrollTargetLayout and scrollTargetBehavior to the scroll views.
@@ -54,6 +55,13 @@ struct ItemView: View {
     private var isEnhanced: Bool {
         switch itemViewType {
         case .enhanced:
+            #if os(tvOS)
+            if provider.item.type == .episode {
+                return provider.item.imageTags?[ImageType.primary.rawValue] != nil
+                    || provider.item.parentBackdropImageTags?.isNotEmpty == true
+            }
+            #endif
+
             guard provider.item.backdropImageTags?.isNotEmpty == true else {
                 return false
             }

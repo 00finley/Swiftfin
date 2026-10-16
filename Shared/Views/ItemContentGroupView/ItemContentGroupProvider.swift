@@ -130,6 +130,16 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
             []
         }
 
+        #if os(tvOS)
+        // Episode pages browse the rest of the series with the same season selector and cards as the series page
+        if item.type == .episode, let seriesID = item.seriesID {
+            SeriesEpisodeContentGroup(
+                parent: BaseItemDto(id: seriesID, name: item.seriesName, type: .series),
+                playButtonItem: item
+            )
+        }
+        #endif
+
         if let genres = item.itemGenres, genres.isNotEmpty {
             PillGroup(
                 displayTitle: L10n.genres,
@@ -223,6 +233,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         default: []
         }
 
+        #if !os(tvOS)
         if item.type == .episode {
             PosterGroup(
                 library: StaticMediaLibrary(
@@ -249,6 +260,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
                 environment: .init(isHeaderButtonEnabled: false)
             )
         }
+        #endif
 
         if let castAndCrew = item.mergedPeople, castAndCrew.isNotEmpty {
             PosterGroup(

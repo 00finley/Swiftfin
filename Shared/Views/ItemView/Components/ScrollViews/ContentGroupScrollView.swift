@@ -41,21 +41,48 @@ extension ItemView {
             }
         }
 
+        private var backgroundImageSources: [ImageSource] {
+            let sources = backgroundImageItem.imageSources(
+                for: .landscape,
+                environment: .init(maxWidth: 1920)
+            )
+
+            // Episodes: prefer the episode still, then fall back to the series backdrop
+            guard backgroundImageItem.type == .episode else { return sources }
+
+            let parentSources = backgroundImageItem.imageSources(
+                for: .landscape,
+                environment: .init(maxWidth: 1920, useParent: true)
+            )
+            return Array((sources + parentSources).uniqued())
+        }
+
         @ViewBuilder
         private var background: some View {
             AlternateLayoutView {
                 Color.clear
             } content: {
-                ImageView(backgroundImageItem.imageSources(
-                    for: .landscape,
-                    environment: .init(maxWidth: 1920)
-                ))
-                .failure {
-                    Color.black
-                }
-                .aspectRatio(contentMode: .fill)
+                ImageView(backgroundImageSources)
+                    .failure {
+                        Color.black
+                    }
+                    .aspectRatio(contentMode: .fill)
             }
             .accessibilityHidden(true)
+            .overlay {
+                // Episode stills are often bright and busy: darken behind the bottom-leading text block
+                if backgroundImageItem.type == .episode {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0.7), location: 0),
+                            .init(color: .black.opacity(0.35), location: 0.45),
+                            .init(color: .clear, location: 0.8),
+                        ],
+                        startPoint: .bottomLeading,
+                        endPoint: .topTrailing
+                    )
+                }
+            }
             .overlay {
                 Rectangle()
                     .fill(Material.regular)

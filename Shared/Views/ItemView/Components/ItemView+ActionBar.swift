@@ -21,13 +21,20 @@ extension ItemView {
         private var buttonConfiguration = ItemActionButtons.Configuration()
 
         let alignment: HorizontalAlignment
+        let axis: Axis
 
         init(
             provider: ItemContentGroupProvider,
-            alignment: HorizontalAlignment = .center
+            alignment: HorizontalAlignment = .center,
+            axis: Axis = .vertical
         ) {
             self.provider = provider
             self.alignment = alignment
+            self.axis = axis
+        }
+
+        private var playButtonWidth: CGFloat {
+            UIDevice.isTV ? 420 : 220
         }
 
         var body: some View {
@@ -35,10 +42,15 @@ extension ItemView {
             let defaultFocusedButton = provider.item.presentPlayButton ?
                 ItemView.Component.play : visible.first?.id ?? ItemView.Component.menu
 
-            VStack(alignment: alignment, spacing: UIDevice.isTV ? 24 : 8) {
+            let layout = axis == .vertical
+                ? AnyLayout(VStackLayout(alignment: alignment, spacing: UIDevice.isTV ? 24 : 8))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: UIDevice.isTV ? 24 : 8))
+
+            layout {
                 if provider.item.presentPlayButton {
                     PlayButton(provider: provider)
                         .coordinatedFocus(ItemView.Component.play, selection: $focusedButton)
+                        .frame(width: axis == .horizontal ? playButtonWidth : nil)
                         .frame(height: UIDevice.isTV ? 75 : 44)
                 }
 
@@ -49,6 +61,7 @@ extension ItemView {
                     menuButtons: menu,
                     focusedButton: $focusedButton
                 )
+                .fixedSize(horizontal: axis == .horizontal, vertical: false)
             }
             .focusSection()
             .defaultFocus(
