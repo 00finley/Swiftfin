@@ -604,6 +604,60 @@ internal enum L10n {
   internal static let discImageDescription = L10n.tr("Localizable", "discImageDescription", fallback: "Square disc art representing physical media like CDs, DVDs, or Blu-rays. Commonly used for music albums and movie collections.")
   /// Disclaimer
   internal static let disclaimer = L10n.tr("Localizable", "disclaimer", fallback: "Disclaimer")
+  /// Discover
+  internal static let discover = L10n.tr("Localizable", "discover", fallback: "Discover")
+  /// Powered by TMDB. Streaming availability by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.
+  internal static let discoverAttribution = L10n.tr("Localizable", "discoverAttribution", fallback: "Powered by TMDB. Streaming availability by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.")
+  /// Available on %@
+  internal static func discoverAvailableOn(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverAvailableOn", String(describing: p1), fallback: "Available on %@")
+  }
+  /// Because You Watched %@
+  internal static func discoverBecauseYouWatched(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverBecauseYouWatched", String(describing: p1), fallback: "Because You Watched %@")
+  }
+  /// Coming Soon
+  internal static let discoverComingSoon = L10n.tr("Localizable", "discoverComingSoon", fallback: "Coming Soon")
+  /// Details
+  internal static let discoverDetails = L10n.tr("Localizable", "discoverDetails", fallback: "Details")
+  /// In Library
+  internal static let discoverInLibrary = L10n.tr("Localizable", "discoverInLibrary", fallback: "In Library")
+  /// Couldn't load Discover. Check your internet connection and try again.
+  internal static let discoverLoadFailed = L10n.tr("Localizable", "discoverLoadFailed", fallback: "Couldn\'t load Discover. Check your internet connection and try again.")
+  /// More Like %@
+  internal static func discoverMoreLike(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverMoreLike", String(describing: p1), fallback: "More Like %@")
+  }
+  /// More Like This
+  internal static let discoverMoreLikeThis = L10n.tr("Localizable", "discoverMoreLikeThis", fallback: "More Like This")
+  /// New on Your Services
+  internal static let discoverNewOnYourServices = L10n.tr("Localizable", "discoverNewOnYourServices", fallback: "New on Your Services")
+  /// Nothing to show yet. Turn on a streaming service in Settings.
+  internal static let discoverNothingYet = L10n.tr("Localizable", "discoverNothingYet", fallback: "Nothing to show yet. Turn on a streaming service in Settings.")
+  /// Not Interested
+  internal static let discoverNotInterested = L10n.tr("Localizable", "discoverNotInterested", fallback: "Not Interested")
+  /// Not streaming on your services
+  internal static let discoverNotStreaming = L10n.tr("Localizable", "discoverNotStreaming", fallback: "Not streaming on your services")
+  /// Open in Library
+  internal static let discoverOpenInLibrary = L10n.tr("Localizable", "discoverOpenInLibrary", fallback: "Open in Library")
+  /// Personalization
+  internal static let discoverPersonalization = L10n.tr("Localizable", "discoverPersonalization", fallback: "Personalization")
+  /// Discover learns from what you watch in Jellyfin and from More Like This and Not Interested. It stays on this Apple TV.
+  internal static let discoverPersonalizationDescription = L10n.tr("Localizable", "discoverPersonalizationDescription", fallback: "Discover learns from what you watch in Jellyfin and from More Like This and Not Interested. It stays on this Apple TV.")
+  /// Region
+  internal static let discoverRegion = L10n.tr("Localizable", "discoverRegion", fallback: "Region")
+  /// Reset Recommendations
+  internal static let discoverResetRecommendations = L10n.tr("Localizable", "discoverResetRecommendations", fallback: "Reset Recommendations")
+  /// %@ Seasons
+  internal static func discoverSeasons(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverSeasons", String(describing: p1), fallback: "%@ Seasons")
+  }
+  /// Streaming Services
+  internal static let discoverStreamingServices = L10n.tr("Localizable", "discoverStreamingServices", fallback: "Streaming Services")
+  /// Top Picks for You
+  internal static let discoverTopPicks = L10n.tr("Localizable", "discoverTopPicks", fallback: "Top Picks for You")
+  /// Trending Now
+  internal static let discoverTrendingNow = L10n.tr("Localizable", "discoverTrendingNow", fallback: "Trending Now")
   /// Dismiss
   internal static let dismiss = L10n.tr("Localizable", "dismiss", fallback: "Dismiss")
   /// Display order

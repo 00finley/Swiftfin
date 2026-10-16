@@ -1,0 +1,177 @@
+//
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
+//
+
+import Defaults
+import SwiftUI
+
+/// Detail page for a Discover title, styled like the library's cinematic item page.
+struct DiscoverTitleView: View {
+
+    @StateObject
+    private var viewModel: DiscoverTitleViewModel
+    @ObservedObject
+    var feed: DiscoverViewModel
+
+    @Router
+    private var router
+
+    @Environment(\.dismiss)
+    private var dismiss
+
+    init(item: DiscoverItem, feed: DiscoverViewModel) {
+        _viewModel = StateObject(wrappedValue: DiscoverTitleViewModel(item: item))
+        self.feed = feed
+    }
+
+    private var item: DiscoverItem {
+        viewModel.item
+    }
+
+    private var infoLine: String {
+        let details = viewModel.details
+        let region = Defaults[.Discover.region]
+        let genres = details?.genres.prefix(2).map(\.name).joined(separator: ", ")
+        let length: String? = if let seasons = details?.seasons, item.title.kind == .tv {
+            L10n.discoverSeasons(seasons)
+        } else if let minutes = details?.runtimeMinutes, minutes > 0 {
+            Duration.seconds(minutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
+        } else {
+            nil
+        }
+        let rating = item.title.voteCount >= 20 ? String(format: "★ %.1f", item.title.voteAverage) : nil
+
+        return [item.title.year, genres, details?.certificationsByRegion[region], length, rating]
+            .compactMap { $0?.isEmpty == false ? $0 : nil }
+            .joined(separator: " · ")
+    }
+
+    var body: some View {
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 56) {
+                header
+                    .focusSection()
+
+                if viewModel.moreLikeThis.isNotEmpty {
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text(L10n.discoverMoreLikeThis)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .padding(.horizontal, 80)
+
+                        ScrollView(.horizontal) {
+                            LazyHStack(alignment: .top, spacing: 40) {
+                                ForEach(viewModel.moreLikeThis) { entry in
+                                    DiscoverCard(item: entry, viewModel: feed) {
+                                        router.route(to: .discoverTitle(item: entry, feed: feed))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 80)
+                            .padding(.vertical, 24)
+                        }
+                        .scrollIndicators(.hidden)
+                        .scrollClipDisabled()
+                    }
+                    .focusSection()
+                }
+
+                Text(L10n.discoverAttribution)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .frame(maxWidth: 1100, alignment: .leading)
+                    .padding(.horizontal, 80)
+                    .padding(.bottom, 60)
+            }
+        }
+        .scrollClipDisabled()
+        .background {
+            DiscoverBackground(item: item, isHeroVisible: true)
+        }
+        .task {
+            await viewModel.load()
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Spacer(minLength: 0)
+
+            DiscoverTitleLogo(item: item, height: 170, maxWidth: 680, logoPath: viewModel.details?.logoPath)
+
+            if infoLine.isNotEmpty {
+                Text(infoLine)
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+
+            if let overview = viewModel.details?.title.overview ?? item.title.overview, overview.isNotEmpty {
+                Text(overview)
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(3)
+                    .frame(maxWidth: 1000, alignment: .leading)
+            }
+
+            availability
+
+            HStack(spacing: 24) {
+                if let libraryItemID = viewModel.libraryItemID {
+                    Button {
+                        router.route(to: .item(id: libraryItemID))
+                    } label: {
+                        Label(L10n.discoverOpenInLibrary, systemImage: "play.fill")
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 24)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(.white)
+                }
+
+                Button {
+                    feed.moreLikeThis(item.title)
+                } label: {
+                    Label(L10n.discoverMoreLikeThis, systemImage: feed.isLiked(item.title) ? "hand.thumbsup.fill" : "hand.thumbsup")
+                        .fontWeight(viewModel.libraryItemID == nil ? .semibold : .regular)
+                        .padding(.horizontal, viewModel.libraryItemID == nil ? 24 : 0)
+                }
+                .if(viewModel.libraryItemID == nil) { $0.buttonStyle(.glassProminent).tint(.white) }
+                .if(viewModel.libraryItemID != nil) { $0.buttonStyle(.glass) }
+
+                Button {
+                    feed.notInterested(item.title)
+                    dismiss()
+                } label: {
+                    Label(L10n.discoverNotInterested, systemImage: "hand.thumbsdown")
+                }
+                .buttonStyle(.glass)
+            }
+            .padding(.top, 8)
+        }
+        .shadow(color: .black.opacity(0.35), radius: 12)
+        .padding(.horizontal, 80)
+        .frame(height: 840, alignment: .bottomLeading)
+    }
+
+    @ViewBuilder
+    private var availability: some View {
+        if viewModel.providers.isNotEmpty {
+            HStack(spacing: 18) {
+                Text(L10n.discoverAvailableOn(viewModel.providers.map(\.name).prefix(3).joined(separator: ", ")))
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.75))
+
+                DiscoverProviderLogos(providers: Array(viewModel.providers.prefix(5)), size: 52)
+            }
+        } else if viewModel.details != nil {
+            Text(L10n.discoverNotStreaming)
+                .font(.callout)
+                .foregroundStyle(.white.opacity(0.62))
+        }
+    }
+}

@@ -121,6 +121,14 @@ struct SettingsView: View {
 
             ColorPicker(L10n.accentColor, selection: $accentColor, supportsOpacity: false)
 
+            #if os(tvOS)
+            if TMDBClient.isAvailable {
+                ChevronButton(L10n.discover) {
+                    router.route(to: .discoverSettings)
+                }
+            }
+            #endif
+
             ChevronButton(L10n.advanced) {
                 router.route(to: .customizeSettingsView)
             }
