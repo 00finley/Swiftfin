@@ -146,11 +146,11 @@ extension Defaults.Keys {
         }
 
         static var shouldShowMissingSeasons: Key<Bool> {
-            UserKey("shouldShowMissingSeasons", default: true)
+            UserKey("shouldShowMissingSeasons", default: false)
         }
 
         static var shouldShowMissingEpisodes: Key<Bool> {
-            UserKey("shouldShowMissingEpisodes", default: true)
+            UserKey("shouldShowMissingEpisodes", default: false)
         }
 
         static var similarPosterType: Key<PosterDisplayType> {
