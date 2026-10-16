@@ -91,9 +91,14 @@ enum UserViewLibraryElement: Displayable, Hashable, Identifiable, LibraryElement
         case .favorites:
             "heart.fill"
         case let .userView(item):
-            if item.snapshot.collectionType == .livetv {
+            switch item.snapshot.collectionType {
+            case .livetv, .tvshows:
                 "tv"
-            } else {
+            case .movies:
+                "film"
+            case .music:
+                "music.note"
+            default:
                 "folder.fill"
             }
         }
@@ -194,12 +199,23 @@ private struct UserViewLibraryGridElement: View {
                     titleLabelOverlay(with: DefaultPlaceholderView(blurHash: imageSource.blurHash))
                 }
                 .failure {
-                    Color.secondarySystemFill
-                        .opacity(0.75)
-                        .overlay {
+                    // Frosted tile with an icon when the library has no artwork
+                    ZStack {
+                        LinearGradient(
+                            colors: [.white.opacity(0.16), .white.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+
+                        VStack(spacing: 10) {
+                            Image(systemName: element.systemImage)
+                                .font(.title)
+                                .opacity(0.85)
+
                             titleLabel
-                                .foregroundStyle(.primary)
                         }
+                        .foregroundStyle(.white)
+                    }
                 }
                 .id(imageSources.hashValue)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

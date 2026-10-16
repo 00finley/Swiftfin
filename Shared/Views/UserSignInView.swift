@@ -185,6 +185,7 @@ struct UserSignInView: View {
             } label: {
                 Text(L10n.signIn)
                     .frame(maxWidth: .infinity)
+                    .foregroundStyle(.black.opacity(username.isEmpty ? 0.35 : 1))
             }
             .listRowInsets(.zero)
             .listRowBackground(Color.clear)
@@ -213,6 +214,7 @@ struct UserSignInView: View {
                 } label: {
                     Text(L10n.quickConnect)
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(.black)
                 }
                 .listRowInsets(.zero)
                 .listRowBackground(Color.clear)

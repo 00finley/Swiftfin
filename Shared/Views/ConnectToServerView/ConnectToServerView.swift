@@ -81,6 +81,7 @@ struct ConnectToServerView: View {
             } label: {
                 Text(L10n.connect)
                     .frame(maxWidth: .infinity)
+                    .foregroundStyle(accentColor.overlayColor.opacity(url.isEmpty ? 0.35 : 1))
             }
             .listRowInsets(.zero)
             .listRowBackground(Color.clear)

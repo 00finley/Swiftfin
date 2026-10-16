@@ -105,13 +105,8 @@ private struct ChapterPosterLabel: View {
 
             Text(chapter.chapterInfo.startSeconds ?? .zero, format: .runtime)
                 .font(UIDevice.isTV ? .caption : .subheadline.weight(.semibold))
-                .foregroundStyle(Color(UIColor.systemBlue))
-                .padding(.horizontal, 4)
-                .background {
-                    Color(.darkGray)
-                        .opacity(0.2)
-                        .cornerRadius(4)
-                }
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
