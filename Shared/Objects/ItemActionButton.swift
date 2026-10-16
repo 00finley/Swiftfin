@@ -90,7 +90,7 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
     var activeColor: Color? {
         switch self {
         case .played:
-            .jellyfinPurple
+            .liquidGlassAccent
         case .favorited:
             .pink
         case .record:

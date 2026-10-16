@@ -43,7 +43,7 @@ extension ItemView {
             #endif
 
             private var logoHeight: CGFloat {
-                UIDevice.isTV ? 100 : 70
+                UIDevice.isTV ? 190 : 70
             }
 
             @ViewBuilder
@@ -92,7 +92,7 @@ extension ItemView {
 
                         ItemView.ActionBar(provider: provider)
                     }
-                    .frame(width: UIDevice.isTV ? 450 : 300)
+                    .frame(width: UIDevice.isTV ? 560 : 300)
 
                     VStack(alignment: .leading, spacing: 10) {
                         ItemView.Description(item: provider.item)

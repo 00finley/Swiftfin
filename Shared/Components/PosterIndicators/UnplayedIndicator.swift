@@ -28,9 +28,12 @@ struct UnplayedIndicator: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(L10n.posterAccessibilityUnplayedCount(count.formatted()))
         } else {
-            Q3RightTriangle()
+            Circle()
                 .fill(accentColor)
-                .aspectRatio(1, contentMode: .fit)
+                .frame(width: 14, height: 14)
+                .shadow(color: .black.opacity(0.45), radius: 4)
+                .padding(14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .accessibilityLabel(L10n.unplayed)
         }
     }

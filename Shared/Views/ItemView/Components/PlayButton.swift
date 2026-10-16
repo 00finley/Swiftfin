@@ -28,6 +28,41 @@ struct PlayButton: View {
         return provider.mediaPlayerItemProvider?.mediaSource?.displayTitle
     }
 
+    #if os(tvOS)
+    /// tvOS-style label, e.g. "Resume S2:E1" or "Play S2:E1", like the Apple TV app.
+    private var title: String {
+        guard let item = provider.mediaPlayerItemProvider?.item else { return L10n.play }
+
+        let fallback = item.playButtonLabel
+        guard [L10n.unaired, L10n.ended, L10n.missing].contains(fallback) == false else { return fallback }
+
+        let isResuming = (item.userData?.playbackPositionTicks ?? 0) > 0
+        let verb = isResuming ? L10n.resume : L10n.play
+
+        if item.type == .episode, let locator = item.seasonEpisodeLabel {
+            return "\(verb) \(locator)"
+        }
+        return verb
+    }
+
+    /// Time remaining when resuming, shown under the title.
+    private var subtitle: String? {
+        guard let item = provider.mediaPlayerItemProvider?.item,
+              (item.userData?.playbackPositionTicks ?? 0) > 0
+        else { return nil }
+
+        return item.progressLabel
+    }
+    #else
+    private var title: String {
+        provider.mediaPlayerItemProvider?.item.playButtonLabel ?? L10n.play
+    }
+
+    private var subtitle: String? {
+        nil
+    }
+    #endif
+
     private func play(fromBeginning: Bool = false) {
         let mediaPlayerItemProvider = if fromBeginning {
             provider.mediaPlayerItemProvider?.modifyingItem {
@@ -61,7 +96,14 @@ struct PlayButton: View {
                 Image(systemName: "play.fill")
 
                 VStack(spacing: 2) {
-                    Text(provider.mediaPlayerItemProvider?.item.playButtonLabel ?? L10n.play)
+                    Text(title)
+
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .opacity(0.7)
+                    }
 
                     if let mediaSource {
                         Marquee(mediaSource, speed: 40, delay: 3, fade: 5)

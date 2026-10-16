@@ -12,6 +12,9 @@ extension Color {
 
     static let jellyfinPurple = Color(red: 172 / 255, green: 92 / 255, blue: 195 / 255, opacity: 1)
 
+    /// Default accent: neutral white, matching tvOS system apps.
+    static let liquidGlassAccent = Color.white
+
     var uiColor: UIColor {
         UIColor(self)
     }

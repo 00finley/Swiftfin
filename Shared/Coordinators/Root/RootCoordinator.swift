@@ -41,7 +41,7 @@ final class RootCoordinator: ObservableObject {
     }
 
     private var started = false
-    private var selectedAccentColor: Color = .jellyfinPurple
+    private var selectedAccentColor: Color = .liquidGlassAccent
     private var accentColorCancellable: AnyCancellable?
     private var appearanceCancellable: AnyCancellable?
     private var currentSessionCancellable: AnyCancellable?
@@ -136,7 +136,7 @@ final class RootCoordinator: ObservableObject {
         splashScreenCancellable?.cancel()
 
         accentColorCancellable = Task {
-            applyAccentColor(.jellyfinPurple)
+            applyAccentColor(.liquidGlassAccent)
         }
         .asAnyCancellable()
 
