@@ -1840,6 +1840,10 @@ internal enum L10n {
   internal static func seasonAndEpisode(_ p1: Any, _ p2: Any) -> String {
     return L10n.tr("Localizable", "seasonAndEpisode", String(describing: p1), String(describing: p2), fallback: "S%1$@:E%2$@")
   }
+  /// S%1$@, E%2$@
+  internal static func seasonEpisodeShort(_ p1: Any, _ p2: Any) -> String {
+    return L10n.tr("Localizable", "seasonEpisodeShort", String(describing: p1), String(describing: p2), fallback: "S%1$@, E%2$@")
+  }
   /// Seasons
   internal static let seasons = L10n.tr("Localizable", "seasons", fallback: "Seasons")
   /// Secondary audio is not supported
@@ -1980,6 +1984,32 @@ internal enum L10n {
   internal static let skipSegments = L10n.tr("Localizable", "skipSegments", fallback: "Skip segments")
   /// Intros, recaps and credits come from a media segment plugin on the server, such as Intro Skipper. With auto play on, credits count down to the next episode.
   internal static let skipSegmentsDescription = L10n.tr("Localizable", "skipSegmentsDescription", fallback: "Intros, recaps and credits come from a media segment plugin on the server, such as Intro Skipper. With auto play on, credits count down to the next episode.")
+  /// Sleep Timer
+  internal static let sleepTimer = L10n.tr("Localizable", "sleepTimer", fallback: "Sleep Timer")
+  /// End of this episode
+  internal static let sleepTimerEndOfEpisode = L10n.tr("Localizable", "sleepTimerEndOfEpisode", fallback: "End of this episode")
+  /// Extend 15 min
+  internal static let sleepTimerExtend = L10n.tr("Localizable", "sleepTimerExtend", fallback: "Extend 15 min")
+  /// %1$@ minutes
+  internal static func sleepTimerMinutes(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "sleepTimerMinutes", String(describing: p1), fallback: "%1$@ minutes")
+  }
+  /// %1$@ min left
+  internal static func sleepTimerMinutesLeft(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "sleepTimerMinutesLeft", String(describing: p1), fallback: "%1$@ min left")
+  }
+  /// Off
+  internal static let sleepTimerOff = L10n.tr("Localizable", "sleepTimerOff", fallback: "Off")
+  /// %1$@ seconds
+  internal static func sleepTimerSeconds(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "sleepTimerSeconds", String(describing: p1), fallback: "%1$@ seconds")
+  }
+  /// %1$@ sec left
+  internal static func sleepTimerSecondsLeft(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "sleepTimerSecondsLeft", String(describing: p1), fallback: "%1$@ sec left")
+  }
+  /// Sleep timer: stopping in 1 minute
+  internal static let sleepTimerWarning = L10n.tr("Localizable", "sleepTimerWarning", fallback: "Sleep timer: stopping in 1 minute")
   /// Slider
   internal static let slider = L10n.tr("Localizable", "slider", fallback: "Slider")
   /// Slow scrub
@@ -2242,6 +2272,10 @@ internal enum L10n {
   internal static let uploadFile = L10n.tr("Localizable", "uploadFile", fallback: "Upload file")
   /// Upload photo
   internal static let uploadPhoto = L10n.tr("Localizable", "uploadPhoto", fallback: "Upload photo")
+  /// Up Next · %1$@
+  internal static func upNextEpisode(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "upNextEpisode", String(describing: p1), fallback: "Up Next · %1$@")
+  }
   /// URL
   internal static let url = L10n.tr("Localizable", "url", fallback: "URL")
   /// Use

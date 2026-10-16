@@ -40,7 +40,23 @@ struct UserSessionRootView: View {
         .task {
             await userSessionManager.start()
         }
+        #if os(tvOS)
+        .task(id: userSessionManager.currentSession?.user.id) {
+            // Let Siri learn the library's titles for "Play <show> in Glassfin"
+            guard userSessionManager.currentSession != nil else { return }
+
+            GlassfinShortcuts.updateAppShortcutParameters()
+        }
+        #endif
         .onOpenURL { url in
+            #if os(tvOS)
+            // glassfin://play?title=..., glassfin://continue (the Siri intents' actions)
+            if let action = PlaybackURLAction(url) {
+                Task { await action.perform() }
+                return
+            }
+            #endif
+
             guard let authenticationAction else { return }
 
             Task {

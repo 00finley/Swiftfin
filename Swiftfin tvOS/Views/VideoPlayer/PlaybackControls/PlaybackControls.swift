@@ -15,6 +15,9 @@ extension VideoPlayer {
 
         typealias ViewState = VideoPlayer.ViewState
 
+        /// Apple TV app: titles, scrubber, buttons and tabs sit 80 pt from the screen edges
+        static let horizontalMargin: CGFloat = 80
+
         @Default(.VideoPlayer.jumpBackwardInterval)
         var jumpBackwardInterval
         @Default(.VideoPlayer.jumpForwardInterval)
@@ -49,7 +52,7 @@ extension VideoPlayer {
                 Toolbar()
                     .isVisible(viewState.visibleElements.contains(.toolbar))
                     .enabled(viewState.visibleElements.contains(.toolbar))
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 26)
 
                 PlaybackProgress()
                     .fixedSize(horizontal: false, vertical: true)
@@ -57,7 +60,7 @@ extension VideoPlayer {
                     .enabled(viewState.isPresentingProgress)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .edgePadding(.horizontal)
+            .padding(.horizontal, Self.horizontalMargin)
             .focusSection()
             .coordinatedFocus(ViewState.Focus.controls)
             .animation(.easeInOut(duration: 0.25), value: viewState.isPresentingSupplement)

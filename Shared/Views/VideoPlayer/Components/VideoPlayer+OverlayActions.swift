@@ -65,19 +65,105 @@ extension VideoPlayer {
 
             return layout {
                 ForEach(actions) { action in
-                    Button {
-                        viewState.performOverlayAction(action.id)
-                    } label: {
-                        if let systemImage = action.button.systemImage {
-                            Label(action.button.title, systemImage: systemImage)
-                        } else {
-                            Text(action.button.title)
+                    switch action.button.style {
+                    case .button:
+                        Button {
+                            viewState.performOverlayAction(action.id)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                if let subtitle = action.button.subtitle {
+                                    Text(subtitle)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.black.opacity(0.6))
+                                }
+
+                                if let systemImage = action.button.systemImage {
+                                    Label(action.button.title, systemImage: systemImage)
+                                } else {
+                                    Text(action.button.title)
+                                }
+                            }
                         }
+                        .buttonStyle(OverlayActionButtonStyle())
+                        .coordinatedFocus(action.id.focusID, selection: $focusedAction)
+
+                    case let .toast(message, messageSystemImage):
+                        Button {
+                            viewState.performOverlayAction(action.id)
+                        } label: {
+                            OverlayToastLabel(
+                                message: message,
+                                messageSystemImage: messageSystemImage,
+                                title: action.button.title,
+                                systemImage: action.button.systemImage
+                            )
+                        }
+                        .buttonStyle(OverlayToastButtonStyle())
+                        .coordinatedFocus(action.id.focusID, selection: $focusedAction)
                     }
-                    .buttonStyle(OverlayActionButtonStyle())
-                    .coordinatedFocus(action.id.focusID, selection: $focusedAction)
                 }
             }
+        }
+    }
+
+    /// The sleep timer warning: a glass toast with a message and its action, which turns white when focused.
+    private struct OverlayToastLabel: View {
+
+        @Environment(\.isFocused)
+        private var isFocused
+
+        let message: String
+        let messageSystemImage: String
+        let title: String
+        let systemImage: String?
+
+        var body: some View {
+            HStack(spacing: UIDevice.isTV ? 24 : 12) {
+                Label(message, systemImage: messageSystemImage)
+                    .font(.callout)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .symbolRenderingMode(.hierarchical)
+
+                Group {
+                    if let systemImage {
+                        Label(title, systemImage: systemImage)
+                    } else {
+                        Text(title)
+                    }
+                }
+                .font(.callout)
+                .fontWeight(.semibold)
+                .padding(.horizontal, UIDevice.isTV ? 24 : 14)
+                .padding(.vertical, UIDevice.isTV ? 10 : 6)
+                .foregroundStyle(isFocused ? .black : .white)
+                .background(isFocused ? Color.white : Color.white.opacity(0.18), in: Capsule())
+            }
+            .lineLimit(1)
+        }
+    }
+
+    private struct OverlayToastButtonStyle: ButtonStyle {
+
+        @Environment(\.isFocused)
+        private var isFocused
+        @Environment(\.accessibilityReduceMotion)
+        private var reduceMotion
+
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .padding(.leading, UIDevice.isTV ? 28 : 16)
+                .padding(.trailing, UIDevice.isTV ? 10 : 6)
+                .padding(.vertical, UIDevice.isTV ? 10 : 6)
+                .backport
+                .glassEffect(.regular, in: .capsule)
+                .background(Color.black.opacity(0.35), in: Capsule())
+                .contentShape(Capsule())
+                .scaleEffect(isFocused && !reduceMotion ? 1.04 : 1)
+                .shadow(color: .black.opacity(isFocused ? 0.45 : 0.2), radius: isFocused ? 14 : 4)
+                .opacity(configuration.isPressed ? 0.75 : 1)
+                .animation(.easeOut(duration: 0.15), value: isFocused)
         }
     }
 

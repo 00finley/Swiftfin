@@ -38,12 +38,16 @@ final class TabCoordinator: ObservableObject {
 
     let tabs: [TabData]
 
+    /// The signed-in session's tab coordinator (the player checks which screen it was presented over)
+    private(set) weak static var current: TabCoordinator?
+
     init(@ArrayBuilder<TabItem> tabs: () -> [TabItem]) {
         let tabs = tabs()
         self.tabs = tabs.map { tab in
             (tab, NavigationCoordinator(), TabItemSelectedPublisher())
         }
         self.selectedTabID = tabs.first?.id
+        Self.current = self
     }
 
     func route(to route: NavigationRoute) async {

@@ -130,7 +130,14 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
 
     private var canPlayNextItem: Bool {
         manager?.queue?.nextItem != nil &&
-            userSession?.user.data.configuration?.enableNextEpisodeAutoPlay == true
+            userSession?.user.data.configuration?.enableNextEpisodeAutoPlay == true &&
+            // "End of this episode" on the sleep timer: no next episode countdown
+            manager?.sleepTimer.allowsNextItem != false
+    }
+
+    /// Where the credits start, if the item has a credits segment.
+    var creditsStart: Duration? {
+        segments.first { $0.type == .outro }?.startSeconds
     }
 
     private func secondsDidChange(_ seconds: Duration) {
@@ -260,9 +267,11 @@ final class MediaSegmentObserver: ViewModel, MediaPlayerObserver {
 
         if type == .outro, canPlayNextItem {
             let title = countdown.map { L10n.nextEpisodeIn($0.description) } ?? L10n.nextEpisode
+            // "Up Next · S2, E3"
+            let subtitle = manager?.queue?.nextItem?.item.playerEpisodeLocator.map { L10n.upNextEpisode($0) }
 
             return [
-                VideoPlayerOverlayAction(id: segmentID, title: title, systemImage: "forward.end.fill") { [weak self] in
+                VideoPlayerOverlayAction(id: segmentID, title: title, systemImage: "forward.end.fill", subtitle: subtitle) { [weak self] in
                     self?.playNextItem()
                 },
             ]

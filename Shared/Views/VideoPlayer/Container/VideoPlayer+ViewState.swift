@@ -78,10 +78,14 @@ extension VideoPlayer {
         var overlayActions: [OverlayAction] {
             access(keyPath: \.overlayActions)
 
-            // Skip intro / next episode actions come first, but not while a guest supplement owns the overlay
+            // The sleep timer's warning comes first (select extends it), then skip intro / next episode,
+            // but not while a guest supplement owns the overlay
+            let sleepTimerActions = manager?.sleepTimer.overlayActions ?? []
             let segmentActions = guestSupplement == nil ? manager?.mediaSegmentObserver?.overlayActions ?? [] : []
 
-            return segmentActions.map {
+            return sleepTimerActions.map {
+                OverlayAction(id: .init(supplementID: SleepTimer.overlayActionSourceID, actionID: $0.id), button: $0)
+            } + segmentActions.map {
                 OverlayAction(id: .init(supplementID: MediaSegmentObserver.overlayActionSourceID, actionID: $0.id), button: $0)
             } + supplements.flatMap { supplement in
                 supplement.overlayActions.map {
@@ -335,6 +339,8 @@ extension VideoPlayer {
         private var supplementActionCancellables: [AnyCancellable] = []
 
         private var mediaSegmentCancellable: AnyCancellable?
+        @ObservationIgnored
+        private var sleepTimerCancellable: AnyCancellable?
 
         #if os(iOS)
         var panHandlingAction: (any _PanHandlingAction)?
@@ -474,6 +480,16 @@ extension VideoPlayer {
                 .sink { [weak self] in
                     self?.withMutation(keyPath: \.overlayActions) {}
                 }
+            sleepTimerCancellable = Publishers.CombineLatest(
+                manager.sleepTimer.$isWarning,
+                manager.sleepTimer.$isFiring
+            )
+            .map { $0 || $1 }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.withMutation(keyPath: \.overlayActions) {}
+            }
             playbackItemCancellable = manager.$playbackItem
                 .sink { [weak self] _ in
                     #if os(iOS)

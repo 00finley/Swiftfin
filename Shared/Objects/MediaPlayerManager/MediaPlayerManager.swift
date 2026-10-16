@@ -243,6 +243,9 @@ final class MediaPlayerManager: ViewModel {
 
     private var initialMediaPlayerItemProvider: MediaPlayerItemProvider?
 
+    /// Stops playback after a set time or at the end of the episode (per playback session)
+    let sleepTimer = SleepTimer()
+
     /// The manager most recently registered for presentation in the video player
     weak static var presented: MediaPlayerManager?
 
@@ -267,6 +270,7 @@ final class MediaPlayerManager: ViewModel {
         super.init()
 
         self.queue?.manager = self
+        self.sleepTimer.manager = self
     }
 
     init(
@@ -279,6 +283,7 @@ final class MediaPlayerManager: ViewModel {
         super.init()
 
         self.queue?.manager = self
+        self.sleepTimer.manager = self
         self.playbackItem = playbackItem
     }
 
@@ -299,6 +304,12 @@ final class MediaPlayerManager: ViewModel {
 
         guard isNearEnd else {
             // If not near end, ignore.
+            return
+        }
+
+        // The sleep timer ends the session here instead of moving on to the next episode
+        if !sleepTimer.allowsNextItem {
+            sleepTimer.fire(fade: false)
             return
         }
 
