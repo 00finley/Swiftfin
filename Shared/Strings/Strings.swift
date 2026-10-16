@@ -2198,6 +2198,8 @@ internal enum L10n {
   internal static let viewsMayRequireRestart = L10n.tr("Localizable", "viewsMayRequireRestart", fallback: "Some views may need an app restart to update.")
   /// VLC
   internal static let vlc = L10n.tr("Localizable", "vlc", fallback: "VLC")
+  /// VLC doesn't support Picture in Picture.
+  internal static let vlcNoPictureInPicture = L10n.tr("Localizable", "vlcNoPictureInPicture", fallback: "VLC doesn\'t support Picture in Picture.")
   /// Volume
   internal static let volume = L10n.tr("Localizable", "volume", fallback: "Volume")
   /// Votes

@@ -64,6 +64,10 @@ extension NavigationRoute {
     @MainActor
     static func videoPlayer(manager: MediaPlayerManager) -> NavigationRoute {
 
+        // A new video replaces one playing in Picture in Picture (a restore passes the same manager)
+        PictureInPictureSession.shared.stopForNewPlayback(of: manager)
+        MediaPlayerManager.presented = manager
+
         Container.shared.mediaPlayerManager.register {
             manager
         }

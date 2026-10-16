@@ -35,19 +35,21 @@ class MediaProgressObserver: ViewModel, MediaPlayerObserver {
         super.init()
     }
 
-    private func sendReport() {
+    private func sendReport(seconds: Duration? = nil) {
         guard let item else { return }
+
+        let seconds = seconds ?? manager?.seconds
 
         switch lastPlaybackRequestStatus {
         case .playing:
             if hasSentStart {
-                sendProgressReport(for: item, seconds: manager?.seconds)
+                sendProgressReport(for: item, seconds: seconds)
             } else {
-                sendStartReport(for: item, seconds: manager?.seconds)
+                sendStartReport(for: item, seconds: seconds)
             }
 
         case .paused:
-            sendProgressReport(for: item, seconds: manager?.seconds, isPaused: true)
+            sendProgressReport(for: item, seconds: seconds, isPaused: true)
         }
     }
 
@@ -91,7 +93,10 @@ class MediaProgressObserver: ViewModel, MediaPlayerObserver {
             endPlaybackSession()
             self.item = newItem
             self.hasSentStart = false
-            sendReport()
+            // `manager.seconds` still holds the previous item's position here (the manager publishes
+            // the new item before updating it). Reporting it for the next episode would put it past
+            // the end, and the server would mark the next episode played.
+            sendReport(seconds: newItem?.baseItem.startSeconds ?? .zero)
         }
     }
 

@@ -243,6 +243,9 @@ final class MediaPlayerManager: ViewModel {
 
     private var initialMediaPlayerItemProvider: MediaPlayerItemProvider?
 
+    /// The manager most recently registered for presentation in the video player
+    weak static var presented: MediaPlayerManager?
+
     // MARK: init
 
 //    static let empty: MediaPlayerManager = .init()
@@ -330,8 +333,7 @@ final class MediaPlayerManager: ViewModel {
         }
 
         proxy?.stop()
-        Container.shared.mediaPlayerManagerPublisher().send(nil)
-        Container.shared.mediaPlayerManager.reset()
+        releaseSharedRegistration()
     }
 
     @Function(\Action.Cases.playNewItem)
@@ -435,6 +437,14 @@ final class MediaPlayerManager: ViewModel {
         await self.cancel()
 
         proxy?.stop()
+        releaseSharedRegistration()
+    }
+
+    /// Clears the shared manager, unless another video already replaced this one
+    /// (e.g. a new video started while this one played in Picture in Picture).
+    private func releaseSharedRegistration() {
+        guard Self.presented == nil || Self.presented === self else { return }
+
         Container.shared.mediaPlayerManagerPublisher().send(nil)
         Container.shared.mediaPlayerManager.reset()
     }

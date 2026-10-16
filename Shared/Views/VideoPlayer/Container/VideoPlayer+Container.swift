@@ -873,6 +873,9 @@ extension VideoPlayer {
 
             guard manager.state != .stopped else { return }
 
+            // Picture in Picture keeps playing after the player view goes away
+            guard !PictureInPictureSession.shared.isHolding(manager) else { return }
+
             Task { @MainActor in
                 manager.stop()
             }

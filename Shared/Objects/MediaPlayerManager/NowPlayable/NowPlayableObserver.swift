@@ -7,6 +7,7 @@
 //
 
 import Combine
+import FactoryKit
 import Foundation
 import Logging
 import MediaPlayer
@@ -90,11 +91,17 @@ class NowPlayableObserver: ViewModel, MediaPlayerObserver {
             .store(in: &cancellables)
 
         Task { @MainActor in
-            configureRemoteCommands(
-                defaultRegisteredCommands,
-                commandHandler: handleCommand
-            )
+            registerRemoteCommands()
         }
+    }
+
+    /// Registers the remote commands again, e.g. after the tvOS player view (which handles
+    /// play/pause presses itself) goes away for Picture in Picture.
+    func registerRemoteCommands() {
+        configureRemoteCommands(
+            defaultRegisteredCommands,
+            commandHandler: handleCommand
+        )
     }
 
     private func playbackRequestStatusDidChange(_ newStatus: MediaPlayerManager.PlaybackRequestStatus) {
@@ -167,6 +174,9 @@ class NowPlayableObserver: ViewModel, MediaPlayerObserver {
             // TODO: figure out way to not need delay
             // Delay to wait for io to stop
             try? await Task.sleep(for: .seconds(0.3))
+
+            // Another video (e.g. one replacing Picture in Picture) may already be using the session
+            guard !Container.shared.userSessionManager().hasActivePlayback else { return }
 
             do {
                 try stopSession()

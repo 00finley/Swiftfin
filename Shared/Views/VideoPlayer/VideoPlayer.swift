@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Combine
 import Defaults
 import FactoryKit
 import SwiftUI
@@ -28,6 +29,8 @@ struct VideoPlayer: View {
     @State
     private var isBeingDismissedByTransition = false
     @State
+    private var isDismissingForPictureInPicture = false
+    @State
     private var safeAreaInsets: EdgeInsets = .init()
 
     #if os(iOS)
@@ -39,6 +42,14 @@ struct VideoPlayer: View {
     private var viewState: ViewState = .init()
 
     init() {
+        // Back from Picture in Picture: keep the player that's been playing
+        if PictureInPictureSession.shared.isRestoringPlayer,
+           let restoredProxy = PictureInPictureSession.shared.restoringProxy(for: FactoryKit.Container.shared.mediaPlayerManager())
+        {
+            self._proxy = .init(wrappedValue: restoredProxy)
+            return
+        }
+
         switch Defaults[.VideoPlayer.videoPlayerType] {
         case .avPlayer:
             self._proxy = .init(wrappedValue: AVMediaPlayerProxy())
@@ -48,6 +59,17 @@ struct VideoPlayer: View {
             self._proxy = .init(wrappedValue: VLCMediaPlayerProxy())
         }
     }
+
+    #if os(tvOS)
+    private var pictureInPictureActivePublisher: AnyPublisher<Bool, Never> {
+        (proxy as? MediaPlayerPictureInPictureCapable)?
+            .isPiPActive
+            .$value
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+            ?? Just(false).eraseToAnyPublisher()
+    }
+    #endif
 
     var body: some View {
         Container(
@@ -62,7 +84,11 @@ struct VideoPlayer: View {
         }
         .onAppear {
             manager.proxy = proxy
-            manager.start()
+            PictureInPictureSession.shared.playerViewDidAppear(for: manager)
+
+            if !PictureInPictureSession.shared.isRestoring(manager) {
+                manager.start()
+            }
         }
         .prefersStatusBarHidden(!viewState.isPresentingControls)
         #if os(iOS)
@@ -93,12 +119,32 @@ struct VideoPlayer: View {
             guard !presentationCoordinator.isPresented else { return }
 
             isBeingDismissedByTransition = true
+
+            guard !PictureInPictureSession.shared.isHolding(manager) else { return }
+
             manager.stop()
         }
         .onReceive(manager.$playbackItem) { newItem in
             // TODO: move to container view
-            viewState.scrubbedSeconds.value = newItem?.baseItem.startSeconds ?? .zero
+            if PictureInPictureSession.shared.isRestoring(manager) {
+                viewState.scrubbedSeconds.value = manager.seconds
+            } else {
+                viewState.scrubbedSeconds.value = newItem?.baseItem.startSeconds ?? .zero
+            }
         }
+        .onDisappear {
+            PictureInPictureSession.shared.playerViewDidDisappear(for: manager)
+        }
+        #if os(tvOS)
+        .onReceive(pictureInPictureActivePublisher) { isActive in
+            // The video continues in the Picture in Picture window: step out of the way, back to
+            // wherever the user was
+            guard isActive, !isDismissingForPictureInPicture, !PictureInPictureSession.shared.isRestoring(manager) else { return }
+
+            isDismissingForPictureInPicture = true
+            router.dismiss()
+        }
+        #endif
         .onReceive(manager.$state) { newState in
             if newState == .stopped, !isBeingDismissedByTransition {
                 router.dismiss()

@@ -135,6 +135,25 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
     }
     #endif
 
+    #if os(tvOS)
+    /// Subtitles, audio and Picture in Picture on the bar, like the Apple TV app
+    static let defaultBarActionButtons: [VideoPlayerActionButton] = [
+        .subtitles,
+        .audio,
+        .pictureInPicture,
+    ]
+
+    static let defaultMenuActionButtons: [VideoPlayerActionButton] = [
+        .aspectFill,
+        .autoPlay,
+        .playPreviousItem,
+        .playNextItem,
+        .audioOffset,
+        .subtitleOffset,
+        .playbackSpeed,
+        .playbackSettings,
+    ]
+    #else
     static let defaultBarActionButtons: [VideoPlayerActionButton] = [
         .aspectFill,
         .autoPlay,
@@ -151,4 +170,5 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
         .pictureInPicture,
         .playbackSettings,
     ]
+    #endif
 }

@@ -334,8 +334,18 @@ extension Defaults.Keys {
             )
         }
 
+        /// tvOS (Glassfin) defaults to AVPlayer for Picture in Picture; VLC stays selectable
         static var videoPlayerType: Key<VideoPlayerType> {
+            #if os(tvOS)
+            UserKey("videoPlayerType", default: .avPlayer)
+            #else
             UserKey("videoPlayerType", default: .vlc)
+            #endif
+        }
+
+        /// Set once the one-time switch from VLC to AVPlayer (for Picture in Picture) has run for this user
+        static var didMigrateToNativePlayer: Key<Bool> {
+            UserKey("didMigrateToNativePlayer", default: false)
         }
 
         enum Gesture {

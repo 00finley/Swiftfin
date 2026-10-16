@@ -346,6 +346,7 @@ final class UserSessionManager: ObservableObject {
         if newSession == nil {
             state = .signedOut
         } else {
+            VideoPlayerType.migrateToNativePlayerIfNeeded()
             state = .signedIn
         }
 

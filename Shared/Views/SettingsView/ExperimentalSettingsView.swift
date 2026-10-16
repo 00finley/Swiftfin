@@ -39,8 +39,12 @@ struct ExperimentalSettingsView: View {
             // swiftlint:enable hard_coded_display_string
         }
         .onChange(of: isMPVEnabled) {
-            if !isMPVEnabled {
+            if !isMPVEnabled, Defaults[.VideoPlayer.videoPlayerType] == .mpv {
+                #if os(tvOS)
+                Defaults[.VideoPlayer.videoPlayerType] = .avPlayer
+                #else
                 Defaults[.VideoPlayer.videoPlayerType] = .vlc
+                #endif
             }
         }
         .onChange(of: isServerConnectionAutoSwitchEnabled) {

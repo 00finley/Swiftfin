@@ -63,3 +63,26 @@ enum VideoPlayerType: String, CaseIterable, Displayable, SupportedCaseIterable, 
         }
     }
 }
+
+extension VideoPlayerType {
+
+    /// One-time switch to AVPlayer, Glassfin's default on tvOS since it supports Picture in Picture.
+    /// Installs that stored VLC move to AVPlayer once (VLC stays selectable in Settings), and the
+    /// Picture in Picture button joins a customized player bar.
+    static func migrateToNativePlayerIfNeeded() {
+        #if os(tvOS)
+        guard !Defaults[.VideoPlayer.didMigrateToNativePlayer] else { return }
+
+        Defaults[.VideoPlayer.didMigrateToNativePlayer] = true
+
+        if Defaults[.VideoPlayer.videoPlayerType] == .vlc {
+            Defaults[.VideoPlayer.videoPlayerType] = .avPlayer
+        }
+
+        if !Defaults[.VideoPlayer.barActionButtons].contains(.pictureInPicture) {
+            Defaults[.VideoPlayer.menuActionButtons].removeAll { $0 == .pictureInPicture }
+            Defaults[.VideoPlayer.barActionButtons].append(.pictureInPicture)
+        }
+        #endif
+    }
+}

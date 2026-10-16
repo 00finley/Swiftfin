@@ -55,6 +55,11 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                 filteredButtons.removeAll { $0 == .audioOffset || $0 == .subtitleOffset }
             }
 
+            // Only the native player (AVPlayer) supports Picture in Picture
+            if !(manager.proxy is MediaPlayerPictureInPictureCapable) || !AVMediaPlayerProxy.isPictureInPictureSupported {
+                filteredButtons.removeAll { $0 == .pictureInPicture }
+            }
+
             if manager.queue == nil {
                 filteredButtons.removeAll { $0 == .autoPlay }
                 filteredButtons.removeAll { $0 == .playNextItem }

@@ -18,6 +18,8 @@ extension VideoPlayer.PlaybackControls.Toolbar.ActionButtons {
 
         @State
         private var isPiPActive: Bool = false
+        @State
+        private var isPiPAvailable: Bool = false
 
         private var systemImage: String {
             if isPiPActive {
@@ -35,6 +37,14 @@ extension VideoPlayer.PlaybackControls.Toolbar.ActionButtons {
                 ?? Just(false).eraseToAnyPublisher()
         }
 
+        private var isPiPAvailablePublisher: AnyPublisher<Bool, Never> {
+            (manager.proxy as? MediaPlayerPictureInPictureCapable)?
+                .isPiPAvailable
+                .$value
+                .eraseToAnyPublisher()
+                ?? Just(false).eraseToAnyPublisher()
+        }
+
         var body: some View {
             if manager.proxy is any MediaPlayerPictureInPictureCapable {
                 Button(L10n.pictureInPicture, systemImage: systemImage) {
@@ -44,7 +54,10 @@ extension VideoPlayer.PlaybackControls.Toolbar.ActionButtons {
                         manager.startPictureInPicture()
                     }
                 }
+                // Not possible until the video is ready
+                .disabled(!isPiPActive && !isPiPAvailable)
                 .onReceive(isPiPActivePublisher) { isPiPActive = $0 }
+                .onReceive(isPiPAvailablePublisher) { isPiPAvailable = $0 }
             }
         }
     }

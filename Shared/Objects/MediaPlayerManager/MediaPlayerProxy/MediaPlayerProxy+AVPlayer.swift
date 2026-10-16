@@ -8,6 +8,7 @@
 
 import AVFoundation
 import AVKit
+import Combine
 import Defaults
 import Foundation
 @preconcurrency import JellyfinAPI
@@ -65,8 +66,19 @@ class AVMediaPlayerProxy: NSObject,
             for var o in observers {
                 o.manager = manager
             }
+
+            if manager !== oldValue {
+                observeManager()
+            }
         }
     }
+
+    /// Manager subscriptions live here rather than in the view so playback keeps
+    /// following the manager (next episode, stop) while the view is gone for Picture in Picture.
+    private var managerCancellables: Set<AnyCancellable> = []
+
+    /// The item currently loaded, so presenting the view again (a Picture in Picture restore) doesn't reload it
+    private weak var loadedItem: MediaPlayerItem?
 
     var observers: [any MediaPlayerObserver] = [
         NowPlayableObserver(audioSessionMode: .moviePlayback, supportsMultichannelContent: true),
@@ -85,6 +97,16 @@ class AVMediaPlayerProxy: NSObject,
         addTimeObserver()
     }
 
+    #if DEBUG
+    deinit {
+        // Simulated Picture in Picture observes Darwin notifications with an unretained pointer
+        CFNotificationCenterRemoveEveryObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque()
+        )
+    }
+    #endif
+
     func play() {
         player.rate = Float(manager?.rate ?? 1.0)
     }
@@ -94,6 +116,11 @@ class AVMediaPlayerProxy: NSObject,
     }
 
     func stop() {
+        // Stopping or replacing the item isn't a user pause: don't report it as one, or the
+        // next item (next episode autoplay) would load paused.
+        timeControlStatusObserver?.invalidate()
+        timeControlStatusObserver = nil
+
         player.pause()
     }
 
@@ -198,6 +225,13 @@ class AVMediaPlayerProxy: NSObject,
 extension AVMediaPlayerProxy {
 
     func setupPiP() {
+        #if DEBUG
+        if Self.simulatesPictureInPicture {
+            setupSimulatedPiP()
+            return
+        }
+        #endif
+
         guard pipController == nil, AVPictureInPictureController.isPictureInPictureSupported() else { return }
 
         pipController = AVPictureInPictureController(playerLayer: avPlayerLayer)
@@ -220,16 +254,42 @@ extension AVMediaPlayerProxy {
     }
 
     func startPiP() {
+        #if DEBUG
+        if Self.simulatesPictureInPicture {
+            pipDidStart()
+            return
+        }
+        #endif
+
         pipController?.startPictureInPicture()
     }
 
     func stopPiP() {
+        #if DEBUG
+        if Self.simulatesPictureInPicture {
+            if isPiPActive.value {
+                pipDidStop()
+            }
+            return
+        }
+        #endif
+
         pipController?.stopPictureInPicture()
+    }
+
+    static var isPictureInPictureSupported: Bool {
+        #if DEBUG
+        if simulatesPictureInPicture {
+            return true
+        }
+        #endif
+
+        return AVPictureInPictureController.isPictureInPictureSupported()
     }
 
     private func teardownPiP() {
         if isPiPActive.value {
-            pipController?.stopPictureInPicture()
+            stopPiP()
         }
 
         isPiPActive.value = false
@@ -237,6 +297,25 @@ extension AVMediaPlayerProxy {
 
         pipAvailableObserver?.invalidate()
         pipAvailableObserver = nil
+        pipController = nil
+    }
+
+    // MARK: Lifecycle
+
+    private func pipDidStart() {
+        PictureInPictureSession.shared.didStart(proxy: self)
+        // The tvOS player view handles play/pause presses itself and disabled the command; it's gone now
+        (observers.first { $0 is NowPlayableObserver } as? NowPlayableObserver)?.registerRemoteCommands()
+        isPiPActive.value = true
+    }
+
+    private func pipDidStop() {
+        isPiPActive.value = false
+        PictureInPictureSession.shared.didStop(proxy: self)
+    }
+
+    private func pipRestore(completion: @escaping (Bool) -> Void) {
+        PictureInPictureSession.shared.restore(proxy: self, completion: completion)
     }
 }
 
@@ -244,13 +323,13 @@ extension AVMediaPlayerProxy: AVPictureInPictureControllerDelegate {
 
     nonisolated func pictureInPictureControllerDidStartPictureInPicture(_ controller: AVPictureInPictureController) {
         Task { @MainActor in
-            isPiPActive.value = true
+            pipDidStart()
         }
     }
 
     nonisolated func pictureInPictureControllerDidStopPictureInPicture(_ controller: AVPictureInPictureController) {
         Task { @MainActor in
-            isPiPActive.value = false
+            pipDidStop()
         }
     }
 
@@ -268,15 +347,98 @@ extension AVMediaPlayerProxy: AVPictureInPictureControllerDelegate {
         _ controller: AVPictureInPictureController,
         restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
     ) {
-        completionHandler(true)
+        Task { @MainActor in
+            pipRestore(completion: completionHandler)
+        }
     }
 }
+
+#if DEBUG
+
+// MARK: - Simulated Picture in Picture (Simulator testing)
+
+/// The tvOS Simulator has no Picture in Picture (`isPictureInPictureSupported()` is false). With the
+/// `-GlassfinSimulatePiP` launch argument, Debug builds run the same session lifecycle without AVKit's
+/// window, so UI tests can check dismissal, background playback, progress reports, restore and close.
+/// Restore and close come from Darwin notifications, e.g.
+/// `xcrun simctl spawn <udid> notifyutil -p glassfin.debug.pip.restore` (or `.close`).
+extension AVMediaPlayerProxy {
+
+    static var simulatesPictureInPicture: Bool {
+        ProcessInfo.processInfo.arguments.contains("-GlassfinSimulatePiP")
+    }
+
+    private static let simulatedRestoreNotification = "glassfin.debug.pip.restore"
+    private static let simulatedCloseNotification = "glassfin.debug.pip.close"
+
+    private func setupSimulatedPiP() {
+        isPiPAvailable.value = true
+
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        let observer = Unmanaged.passUnretained(self).toOpaque()
+        for name in [Self.simulatedRestoreNotification, Self.simulatedCloseNotification] {
+            CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(name as CFString), nil)
+            CFNotificationCenterAddObserver(center, observer, { _, observer, name, _, _ in
+                guard let observer, let name = name?.rawValue as String? else { return }
+
+                let proxy = Unmanaged<AVMediaPlayerProxy>.fromOpaque(observer).takeUnretainedValue()
+                Task { @MainActor in
+                    proxy.handleSimulatedPiPCommand(name)
+                }
+            }, name as CFString, nil, .deliverImmediately)
+        }
+    }
+
+    private func handleSimulatedPiPCommand(_ name: String) {
+        guard isPiPActive.value else { return }
+
+        if name == Self.simulatedRestoreNotification {
+            pipRestore { [weak self] _ in
+                self?.pipDidStop()
+            }
+        } else {
+            pipDidStop()
+        }
+    }
+}
+#endif
 
 // MARK: - Playback Lifecycle
 
 extension AVMediaPlayerProxy {
 
+    private func observeManager() {
+        managerCancellables = []
+
+        guard let manager else { return }
+
+        manager.$playbackItem
+            .sink { [weak self] playbackItem in
+                guard let playbackItem else { return }
+
+                self?.playNew(item: playbackItem)
+            }
+            .store(in: &managerCancellables)
+
+        manager.$state
+            .sink { [weak self] state in
+                guard state == .stopped else { return }
+
+                self?.playbackStopped()
+            }
+            .store(in: &managerCancellables)
+
+        manager.$rate
+            .dropFirst()
+            .sink { [weak self] rate in self?.setRate(rate) }
+            .store(in: &managerCancellables)
+    }
+
     func playNew(item: MediaPlayerItem) {
+        guard item !== loadedItem else { return }
+
+        loadedItem = item
+
         let playerItem = AVPlayerItem(url: item.url)
         playerItem.externalMetadata = item.baseItem.avMetadata
 
@@ -299,6 +461,7 @@ extension AVMediaPlayerProxy {
 
     func playbackStopped() {
         teardownPiP()
+        loadedItem = nil
 
         #if os(tvOS)
         displayManager?.preferredDisplayCriteria = nil
@@ -382,13 +545,25 @@ extension AVMediaPlayerProxy {
                 switch status {
                 case .playing:
                     self.manager?.setPlaybackRequestStatus(status: .playing)
+
                 case .paused:
+                    // Reaching the end stops the player too; that isn't a user pause, or the
+                    // next episode (autoplay) would load paused
+                    guard !self.isAtEndOfItem else { break }
+
                     self.manager?.setPlaybackRequestStatus(status: .paused)
+
                 default:
                     break
                 }
             }
         }
+    }
+
+    private var isAtEndOfItem: Bool {
+        guard let item = player.currentItem, item.duration.isNumeric else { return false }
+
+        return item.currentTime() >= item.duration - CMTime(seconds: 0.5, preferredTimescale: 600)
     }
 
     private func observeVideoSize(of playerItem: AVPlayerItem) {
@@ -504,9 +679,19 @@ extension AVMediaPlayerProxy {
             DispatchQueue.main.async {
                 guard let self,
                       let manager = self.manager,
-                      manager.state != .stopped,
-                      manager.playbackRequestStatus == .playing
+                      manager.state != .stopped
                 else { return }
+
+                manager.logger.info(
+                    "AVPlayer starting playback",
+                    metadata: [
+                        "itemID": .string(item.baseItem.id ?? ""),
+                        "requestedSeconds": .stringConvertible(startSeconds.seconds),
+                        "positionSeconds": .stringConvertible(self.player.currentTime().seconds),
+                    ]
+                )
+
+                guard manager.playbackRequestStatus == .playing else { return }
 
                 self.player.rate = Float(manager.rate)
             }
@@ -571,8 +756,6 @@ extension AVMediaPlayerProxy {
     struct AVPlayerView: View {
 
         @EnvironmentObject
-        private var manager: MediaPlayerManager
-        @EnvironmentObject
         private var proxy: AVMediaPlayerProxy
 
         let videoLayout: VideoPlayer.VideoLayout
@@ -582,19 +765,6 @@ extension AVMediaPlayerProxy {
                 .frame(width: videoLayout.renderSize.width, height: videoLayout.renderSize.height)
                 .scaleEffect(videoLayout.renderScale)
                 .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                .onReceive(manager.$playbackItem) { playbackItem in
-                    guard let playbackItem else { return }
-
-                    proxy.playNew(item: playbackItem)
-                }
-                .onReceive(manager.$state) { state in
-                    guard state == .stopped else { return }
-
-                    proxy.playbackStopped()
-                }
-                .onChange(of: manager.rate) {
-                    proxy.setRate(manager.rate)
-                }
         }
     }
 
@@ -646,10 +816,13 @@ extension AVMediaPlayerProxy {
             guard let window else { return }
 
             Task { @MainActor [weak self] in
-                self?.proxy.setupPiP()
+                guard let self else { return }
+
+                proxy.setupPiP()
                 #if os(tvOS)
-                self?.proxy.displayManager = window.avDisplayManager
+                proxy.displayManager = window.avDisplayManager
                 #endif
+                PictureInPictureSession.shared.playerLayerDidAttach(proxy: proxy)
             }
         }
     }

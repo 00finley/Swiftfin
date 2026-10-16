@@ -72,6 +72,13 @@ final class HomePreviewController: ObservableObject {
             .publisher(for: UIApplication.willResignActiveNotification)
             .sink { [weak self] _ in self?.stop() }
             .store(in: &cancellables)
+
+        // Never two videos (and two soundtracks) at once: no previews while Picture in Picture plays
+        PictureInPictureSession.shared
+            .$isActive
+            .filter(\.self)
+            .sink { [weak self] _ in self?.stop() }
+            .store(in: &cancellables)
     }
 
     // MARK: - Focus
@@ -86,6 +93,7 @@ final class HomePreviewController: ObservableObject {
         guard let item,
               let itemID = item.id,
               Defaults[.VideoPlayer.HomePreviews.autoplay],
+              !PictureInPictureSession.shared.isActive,
               [.episode, .movie, .video].contains(item.type)
         else { return }
 
@@ -178,7 +186,9 @@ final class HomePreviewController: ObservableObject {
 
             statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] observedItem, _ in
                 Task { @MainActor in
-                    guard let self, observedItem.status == .readyToPlay, self.loadingItemID == itemID else { return }
+                    guard let self, observedItem.status == .readyToPlay, self.loadingItemID == itemID,
+                          !PictureInPictureSession.shared.isActive
+                    else { return }
 
                     await self.beginPlayback(of: itemID)
                 }

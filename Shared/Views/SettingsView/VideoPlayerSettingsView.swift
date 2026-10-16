@@ -158,7 +158,7 @@ struct VideoPlayerSettingsView: View {
 
     @ViewBuilder
     private var engineSettings: some View {
-        Section(L10n.playback) {
+        Section(L10n.playback, footer: L10n.vlcNoPictureInPicture) {
             #if os(iOS)
             videoPlayerPicker
             #else

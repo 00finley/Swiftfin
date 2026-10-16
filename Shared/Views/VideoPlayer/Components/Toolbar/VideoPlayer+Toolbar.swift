@@ -15,7 +15,8 @@ extension VideoPlayer.PlaybackControls {
 
         typealias ViewState = VideoPlayer.ViewState
 
-        static let buttonSize: CGFloat = UIDevice.isTV ? 56 : 44
+        /// tvOS: the Apple TV app's 66 pt circular glass buttons
+        static let buttonSize: CGFloat = UIDevice.isTV ? 66 : 44
 
         @Environment(ViewState.self)
         private var viewState
