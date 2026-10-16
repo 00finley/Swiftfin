@@ -13,8 +13,10 @@ import TVServices
 enum TopShelfSessionPublisher {
 
     static func publish(_ session: UserSession?) {
+        print("[TopShelf] last extension run: \(TopShelfCredentials.loadDiagnostics() ?? "none recorded")")
+
         if let session {
-            TopShelfCredentials.save(
+            let saved = TopShelfCredentials.save(
                 .init(
                     serverID: session.server.id,
                     serverURL: session.server.effectiveServerURL,
@@ -22,6 +24,7 @@ enum TopShelfSessionPublisher {
                     accessToken: session.user.accessToken
                 )
             )
+            print("[TopShelf] published session for \(session.server.effectiveServerURL.absoluteString): \(saved ? "ok" : "FAILED")")
         } else {
             TopShelfCredentials.clear()
         }

@@ -17,13 +17,26 @@ final class ContentProvider: TVTopShelfContentProvider {
     private let latestLimit = 10
 
     override func loadTopShelfContent() async -> (any TVTopShelfContent)? {
-        guard let session = TopShelfCredentials.load() else { return nil }
+        var log = ["\(Date.now.formatted(date: .abbreviated, time: .standard))"]
+        defer { TopShelfCredentials.saveDiagnostics(log.joined(separator: " | ")) }
+
+        guard let session = TopShelfCredentials.load() else {
+            log.append("no credentials in shared keychain")
+            return nil
+        }
+
+        log.append("server \(session.serverURL.absoluteString)")
 
         let client = TopShelfClient(session: session)
 
-        async let resume = try? client.resumeItems(limit: upNextLimit)
-        async let nextUp = try? client.nextUpItems(limit: upNextLimit)
-        async let latest = try? client.latestItems(limit: latestLimit)
+        async let resumeResult = Self.capture { try await client.resumeItems(limit: self.upNextLimit) }
+        async let nextUpResult = Self.capture { try await client.nextUpItems(limit: self.upNextLimit) }
+        async let latestResult = Self.capture { try await client.latestItems(limit: self.latestLimit) }
+
+        let (resume, resumeNote) = await resumeResult
+        let (nextUp, nextUpNote) = await nextUpResult
+        let (latest, latestNote) = await latestResult
+        log.append("resume \(resumeNote), nextUp \(nextUpNote), latest \(latestNote)")
 
         var seen = Set<String>()
         let upNext = await ((resume ?? []) + (nextUp ?? []))
@@ -47,9 +60,22 @@ final class ContentProvider: TVTopShelfContentProvider {
             sections.append(collection)
         }
 
-        guard sections.isNotEmpty else { return nil }
+        guard sections.isNotEmpty else {
+            log.append("no sections")
+            return nil
+        }
 
+        log.append("returned \(sections.count) section(s)")
         return TVTopShelfSectionedContent(sections: sections)
+    }
+
+    private static func capture(_ work: () async throws -> [TopShelfClient.Item]) async -> ([TopShelfClient.Item]?, String) {
+        do {
+            let items = try await work()
+            return (items, "\(items.count)")
+        } catch {
+            return (nil, "error: \(error)")
+        }
     }
 
     private func makeItem(

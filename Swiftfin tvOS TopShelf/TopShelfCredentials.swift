@@ -78,4 +78,32 @@ enum TopShelfCredentials {
     static func clear() {
         SecItemDelete(baseQuery as CFDictionary)
     }
+
+    // MARK: Diagnostics
+
+    /// Last Top Shelf run, written by the extension and logged by the app, since the
+    /// extension has no console of its own on a real Apple TV.
+    private static var diagnosticsQuery: [String: Any] {
+        var query = baseQuery
+        query[kSecAttrAccount as String] = "last-run"
+        return query
+    }
+
+    static func saveDiagnostics(_ text: String) {
+        SecItemDelete(diagnosticsQuery as CFDictionary)
+        var query = diagnosticsQuery
+        query[kSecValueData as String] = Data(text.utf8)
+        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        SecItemAdd(query as CFDictionary, nil)
+    }
+
+    static func loadDiagnostics() -> String? {
+        var query = diagnosticsQuery
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
+
+        return String(data: data, encoding: .utf8)
+    }
 }

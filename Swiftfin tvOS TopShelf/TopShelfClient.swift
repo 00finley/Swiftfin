@@ -115,7 +115,7 @@ struct TopShelfClient {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+            throw URLError(.badServerResponse, userInfo: ["status": (response as? HTTPURLResponse)?.statusCode ?? -1])
         }
 
         return data
