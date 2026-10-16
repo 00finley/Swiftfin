@@ -188,6 +188,8 @@ internal enum L10n {
   internal static let autoDescription = L10n.tr("Localizable", "autoDescription", fallback: "Optimizes playback using default settings for most devices. Some formats may require server transcoding for non-compatible media types.")
   /// Auto play
   internal static let autoPlay = L10n.tr("Localizable", "autoPlay", fallback: "Auto play")
+  /// Autoplay previews
+  internal static let autoplayPreviews = L10n.tr("Localizable", "autoplayPreviews", fallback: "Autoplay previews")
   /// Auto skip
   internal static let autoSkip = L10n.tr("Localizable", "autoSkip", fallback: "Auto skip")
   /// Auto switch
@@ -1092,6 +1094,8 @@ internal enum L10n {
   internal static let missingCodecValues = L10n.tr("Localizable", "missingCodecValues", fallback: "Missing codec values")
   /// Mixer
   internal static let mixer = L10n.tr("Localizable", "mixer", fallback: "Mixer")
+  /// More information
+  internal static let moreInformation = L10n.tr("Localizable", "moreInformation", fallback: "More information")
   /// Movie
   internal static let movie = L10n.tr("Localizable", "movie", fallback: "Movie")
   /// Movies
@@ -1366,6 +1370,12 @@ internal enum L10n {
   internal static let preview = L10n.tr("Localizable", "preview", fallback: "Preview")
   /// Preview image
   internal static let previewImage = L10n.tr("Localizable", "previewImage", fallback: "Preview image")
+  /// Previews
+  internal static let previews = L10n.tr("Localizable", "previews", fallback: "Previews")
+  /// Plays the focused Next Up episode behind Home after a moment. Previews never change your watch progress.
+  internal static let previewsDescription = L10n.tr("Localizable", "previewsDescription", fallback: "Plays the focused Next Up episode behind Home after a moment. Previews never change your watch progress.")
+  /// Preview sound
+  internal static let previewSound = L10n.tr("Localizable", "previewSound", fallback: "Preview sound")
   /// Previous
   internal static let previous = L10n.tr("Localizable", "previous", fallback: "Previous")
   /// Previous item
@@ -1878,6 +1888,10 @@ internal enum L10n {
   internal static func timeLimitLabelWithValue(_ p1: Any) -> String {
     return L10n.tr("Localizable", "timeLimitLabelWithValue", String(describing: p1), fallback: "Time limit: %1$@")
   }
+  /// %@ left
+  internal static func timeRemaining(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "timeRemaining", String(describing: p1), fallback: "%@ left")
+  }
   /// Timestamp
   internal static let timestamp = L10n.tr("Localizable", "timestamp", fallback: "Timestamp")
   /// Title
@@ -1920,6 +1934,8 @@ internal enum L10n {
   internal static let tvProgram = L10n.tr("Localizable", "tvProgram", fallback: "TV program")
   /// TV programs
   internal static let tvPrograms = L10n.tr("Localizable", "tvPrograms", fallback: "TV programs")
+  /// TV Show
+  internal static let tvShow = L10n.tr("Localizable", "tvShow", fallback: "TV Show")
   /// TV shows
   internal static let tvShows = L10n.tr("Localizable", "tvShows", fallback: "TV shows")
   /// TV Shows

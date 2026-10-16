@@ -32,7 +32,7 @@ struct UpNextLibrary: BaseItemKindLibrary {
 
         var resumeParameters = Paths.GetResumeItemsParameters()
         resumeParameters.enableUserData = true
-        resumeParameters.fields = PosterSubtitleField.itemFields + [.overview]
+        resumeParameters.fields = PosterSubtitleField.itemFields + [.overview, .genres]
         resumeParameters.limit = 50
         resumeParameters.mediaTypes = [.video]
         resumeParameters.userID = pageState.userSession.user.id
@@ -40,7 +40,7 @@ struct UpNextLibrary: BaseItemKindLibrary {
         var nextUpParameters = Paths.GetNextUpParameters()
         nextUpParameters.enableRewatching = environment.enableRewatching
         nextUpParameters.enableUserData = true
-        nextUpParameters.fields = PosterSubtitleField.itemFields + [.overview]
+        nextUpParameters.fields = PosterSubtitleField.itemFields + [.overview, .genres]
         nextUpParameters.limit = pageState.pageSize
 
         if environment.maxNextUp > 0 {

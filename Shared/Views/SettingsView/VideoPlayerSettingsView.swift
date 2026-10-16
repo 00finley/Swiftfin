@@ -40,6 +40,13 @@ struct VideoPlayerSettingsView: View {
     @Default(.VideoPlayer.resumeOffset)
     private var resumeOffset
 
+    // MARK: - Home Preview Defaults
+
+    @Default(.VideoPlayer.HomePreviews.autoplay)
+    private var autoplayPreviews
+    @Default(.VideoPlayer.HomePreviews.sound)
+    private var previewSound
+
     // MARK: - Media Segment Defaults
 
     @Default(.VideoPlayer.MediaSegments.intro)
@@ -111,6 +118,10 @@ struct VideoPlayerSettingsView: View {
             resumeSettings
 
             mediaSegmentSettings
+
+            #if os(tvOS)
+            homePreviewSettings
+            #endif
 
             sliderSettings
 
@@ -284,6 +295,24 @@ struct VideoPlayerSettingsView: View {
             Text(L10n.skipSegmentsDescription)
         }
     }
+
+    // MARK: - Home Preview Settings
+
+    #if os(tvOS)
+    @ViewBuilder
+    private var homePreviewSettings: some View {
+        Section {
+            Toggle(L10n.autoplayPreviews, isOn: $autoplayPreviews)
+
+            Toggle(L10n.previewSound, isOn: $previewSound)
+                .disabled(!autoplayPreviews)
+        } header: {
+            Text(L10n.previews)
+        } footer: {
+            Text(L10n.previewsDescription)
+        }
+    }
+    #endif
 
     // MARK: - Slider Settings
 

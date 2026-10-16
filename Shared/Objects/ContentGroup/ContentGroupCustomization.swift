@@ -13,6 +13,11 @@ struct ContentGroupParentOption {
 
     private enum Options: Int {
         case ignoreSafeAreaTop
+        /// The first group's preview is playing full screen; other groups fade out.
+        case immersiveHero
+        /// The hero has focus: keep the page scrolled to the top so its row stays cut off by the
+        /// bottom edge, like the Apple TV app, instead of scrolling the focused card into view.
+        case pinsToTop
     }
 }
 

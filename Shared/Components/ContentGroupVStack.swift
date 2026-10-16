@@ -11,6 +11,7 @@ import SwiftUI
 struct ContentGroupVStack: View {
 
     let groups: [any ContentGroup]
+    var isHeroImmersive: Bool = false
 
     private var spacing: CGFloat {
         #if os(tvOS)
@@ -27,10 +28,12 @@ struct ContentGroupVStack: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: spacing) {
-            ForEach(groups, id: \.id) { group in
+            ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
                 makeGroupBody(group)
                     .eraseToAnyView()
                     .coordinatedFocus(group.id)
+                    .id(group.id)
+                    .opacity(isHeroImmersive && index > 0 ? 0 : 1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)

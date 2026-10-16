@@ -28,6 +28,10 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
     @State
     private var contentGroupOptions: ContentGroupParentOption = .init()
 
+    /// Scrolls to the true top edge (ScrollViewReader anchors at the safe area instead)
+    @State
+    private var scrollPosition = ScrollPosition(edge: .top)
+
     @StateObject
     private var focusCoordinator = FocusCoordinator(waitingFor: Focus.content.rawValue, focusPlaceholder: true)
     @StateObject
@@ -49,15 +53,41 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
                         .frame(height: 0)
                         .id("top")
 
-                    ContentGroupVStack(groups: viewModel.groups)
-                        .edgePadding(contentGroupOptions.contains(.ignoreSafeAreaTop) ? .bottom : .vertical)
-                        .padding(.top, contentGroupOptions.contains(.ignoreSafeAreaTop) ? 0 : tabSafeAreaInsets.top)
-                        .onPreferenceChange(ContentGroupCustomizationKey.self) { value in
-                            contentGroupOptions = value
-                        }
+                    ContentGroupVStack(
+                        groups: viewModel.groups,
+                        isHeroImmersive: contentGroupOptions.contains(.immersiveHero)
+                    )
+                    .edgePadding(contentGroupOptions.contains(.ignoreSafeAreaTop) ? .bottom : .vertical)
+                    .padding(.top, contentGroupOptions.contains(.ignoreSafeAreaTop) ? 0 : tabSafeAreaInsets.top)
+                    .onPreferenceChange(ContentGroupCustomizationKey.self) { value in
+                        contentGroupOptions = value
+                    }
                 }
             }
-            .trackingFrame(for: .scrollView)
+            #if os(tvOS)
+            .scrollPosition($scrollPosition)
+                .onChange(of: contentGroupOptions.contains(.pinsToTop)) { _, isPinned in
+                    if isPinned {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            scrollPosition.scrollTo(edge: .top)
+                        }
+                    }
+                }
+                .onChange(of: focusCoordinator.focusedIDs) { oldValue, newValue in
+                    // While the hero is pinned, scrolling is disabled, so focus moving down to a later
+                    // group doesn't scroll it into view by itself
+                    guard !contentGroupOptions.contains(.pinsToTop),
+                          let firstID = viewModel.groups.first?.id,
+                          oldValue.contains(firstID),
+                          let target = viewModel.groups.dropFirst().first(where: { newValue.contains($0.id) })
+                    else { return }
+
+                    withAnimation(.easeOut(duration: 0.35)) {
+                        proxy.scrollTo(target.id, anchor: .top)
+                    }
+                }
+            #endif
+                .trackingFrame(for: .scrollView)
             #if os(tvOS)
             .coordinatedFocus(Focus.content.rawValue)
             .ignoresSafeArea(.container, edges: [.horizontal, .top])
@@ -67,6 +97,11 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
             )
             #endif
             .scrollIndicators(.hidden)
+            #if os(tvOS)
+            .scrollDisabled(contentGroupOptions.contains(.pinsToTop))
+            // Groups that draw under the top edge start at the true top, not below the safe area
+            .contentMargins(.top, contentGroupOptions.contains(.ignoreSafeAreaTop) ? 0 : nil, for: .scrollContent)
+            #endif
             .refreshable {
                 await viewModel.background.refresh()
             }
