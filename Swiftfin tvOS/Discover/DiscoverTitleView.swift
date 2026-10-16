@@ -91,7 +91,7 @@ struct DiscoverTitleView: View {
         let region = Defaults[.Discover.region]
         let genres = details?.genres.prefix(2).map(\.name).joined(separator: ", ")
         let length: String? = if let seasons = details?.seasons, item.title.kind == .tv {
-            L10n.discoverSeasons(seasons)
+            seasons == 1 ? L10n.discoverOneSeason : L10n.discoverSeasons(seasons)
         } else if let minutes = details?.runtimeMinutes, minutes > 0 {
             Duration.seconds(minutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
         } else {

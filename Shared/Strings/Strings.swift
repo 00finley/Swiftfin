@@ -640,6 +640,8 @@ internal enum L10n {
   internal static let discoverNotInterested = L10n.tr("Localizable", "discoverNotInterested", fallback: "Not Interested")
   /// Not streaming on your services
   internal static let discoverNotStreaming = L10n.tr("Localizable", "discoverNotStreaming", fallback: "Not streaming on your services")
+  /// 1 Season
+  internal static let discoverOneSeason = L10n.tr("Localizable", "discoverOneSeason", fallback: "1 Season")
   /// Open in Library
   internal static let discoverOpenInLibrary = L10n.tr("Localizable", "discoverOpenInLibrary", fallback: "Open in Library")
   /// Personalization
