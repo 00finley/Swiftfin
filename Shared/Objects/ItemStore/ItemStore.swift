@@ -42,11 +42,31 @@ final class ItemStore {
         }
     }
 
-    enum StoreError: Error {
+    enum StoreError: LocalizedError {
 
         case invalidItemID
         case invalidSession
         case itemUnavailable
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidItemID:
+                L10n.errorItemNotFound
+            case .invalidSession:
+                L10n.errorItemLoadSessionChanged
+            case .itemUnavailable:
+                L10n.errorItemUnavailable
+            }
+        }
+
+        var recoverySuggestion: String? {
+            switch self {
+            case .invalidSession:
+                L10n.errorItemLoadSessionChangedRecovery
+            default:
+                nil
+            }
+        }
     }
 
     private let changeSubject = PassthroughSubject<Change, Never>()

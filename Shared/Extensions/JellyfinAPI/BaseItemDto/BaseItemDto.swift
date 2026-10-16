@@ -330,7 +330,8 @@ extension BaseItemDto {
             return formatter
         }()
 
-        guard let runTimeTicks,
+        // Series report a tiny aggregate runtime that would render as "0m"
+        guard let runTimeTicks, runTimeTicks >= 600_000_000,
               let text = timeHMSFormatter.string(from: Double(runTimeTicks / 10_000_000)) else { return nil }
 
         return text

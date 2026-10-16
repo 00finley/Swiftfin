@@ -107,6 +107,9 @@ extension ItemView {
 
                             MetadataHStack(item: provider.item)
                         }
+                        #if os(tvOS)
+                        .font(.callout)
+                        #endif
                         .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)

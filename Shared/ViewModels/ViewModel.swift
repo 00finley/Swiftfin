@@ -34,6 +34,11 @@ class ViewModel: ObservableObject {
     }
 
     func requireUserSession() throws -> UserSession {
+        // A replaced session's item store rejects every request, so pick up the current one (lets Retry recover)
+        if let userSession, !userSession.items.isActive {
+            $userSession.resolve(reset: .scope)
+        }
+
         guard let userSession else {
             logger.error("Missing user session for authenticated view model")
             throw UserSessionError.missingCurrentSession

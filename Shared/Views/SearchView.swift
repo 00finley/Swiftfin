@@ -30,29 +30,53 @@ struct SearchView: View {
     @StateObject
     private var viewModel = SearchViewModel()
 
+    @Router
+    private var router
+
     @TabItemSelected
     private var tabItemSelected
 
     @ViewBuilder
     private var suggestionsView: some View {
+        #if os(tvOS)
+        VStack(alignment: .leading, spacing: 20) {
+            Text(L10n.suggestions)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .edgePadding(.horizontal)
+
+            PosterHStack(
+                elements: viewModel.suggestions,
+                displayType: .portrait,
+                size: .small
+            ) { item, _ in
+                router.route(to: .item(item: item))
+            }
+            .frame(height: 420)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        #else
         VStack(spacing: 20) {
             ForEach(viewModel.suggestions) { item in
                 Button(item.displayTitle) {
                     searchQuery = item.displayTitle
                 }
-                #if os(tvOS)
-                .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                #endif
             }
         }
+        #endif
     }
+
+    #if os(tvOS)
+    private var showsFilters: Bool {
+        enabledDrawerFilters.isNotEmpty && (viewModel.canSearch || viewModel.filterViewModel.hasActiveFilters)
+    }
+    #endif
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 #if os(tvOS)
-                if enabledDrawerFilters.isNotEmpty {
+                if showsFilters {
                     ScrollView(.horizontal) {
                         HStack(spacing: 20) {
                             FilterTrack(viewModel: viewModel.filterViewModel, types: enabledDrawerFilters, focus: $focusedFilter)

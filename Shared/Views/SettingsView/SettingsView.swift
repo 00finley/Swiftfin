@@ -30,11 +30,19 @@ struct SettingsView: View {
     // MARK: - Body
 
     var body: some View {
+        #if os(tvOS)
+        // Logs and debug tools live under Advanced so the first screen stays about you and your server
+        Form(image: .glassfinGlyph) {
+            serverSection
+            customizeSection
+        }
+        #else
         Form(image: .jellyfinBlobBlue) {
             serverSection
             customizeSection
             diagnosticsSection
         }
+        #endif
         #if os(iOS)
         .navigationTitle(L10n.settings)
             .navigationBarCloseButton {

@@ -25,14 +25,17 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
 
     private let action: (Item) -> Void
     private let items: [Item]
+    private let title: String?
     private let topContent: (Item) -> TopContent
 
     init(
         items: [Item],
+        title: String? = nil,
         action: @escaping (Item) -> Void,
         @ViewBuilder topContent: @escaping (Item) -> TopContent
     ) {
         self.items = items
+        self.title = title
         self.action = action
         self.topContent = topContent
     }
@@ -65,6 +68,15 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                         .transition(.opacity)
                 }
 
+                if let title {
+                    Text(title)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white.opacity(0.9))
+                        .edgePadding(.leading)
+                        .padding(.top, 24)
+                }
+
                 // TODO: fix intrinsic content sizing without frame
                 PosterHStack(
                     elements: items,
@@ -94,6 +106,18 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                         (location: 0.6, opacity: 0.4)
                         (location: 1, opacity: 1)
                     }
+            }
+            .overlay {
+                // Keeps the hero's title, summary and button readable over busy art
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.7), location: 0),
+                        .init(color: .black.opacity(0.35), location: 0.35),
+                        .init(color: .clear, location: 0.6),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
             }
             .frame(height: parentFrame.height)
             .mask(gradient: .linear) {
