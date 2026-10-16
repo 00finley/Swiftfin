@@ -20,6 +20,7 @@ struct ItemView: View {
         static let header = "itemView-header"
         static let menu = "itemView-menu"
         static let play = "itemView-play"
+        static let rating = "itemView-rating"
     }
 
     @Default(.Customization.itemViewType)

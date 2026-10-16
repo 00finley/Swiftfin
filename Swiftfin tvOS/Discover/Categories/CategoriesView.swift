@@ -62,6 +62,8 @@ struct CategoriesView: View {
         .onAppear {
             SeerrStatusStore.installRequestHandler()
             feed.ensureLibrary()
+            // So For You and search don't wait for it later
+            feed.prepareTaste()
         }
         .task(id: region) {
             if let logos = try? await TMDBClient.shared.providerLogos(region: region) {
@@ -229,6 +231,7 @@ struct CategoryResultsView: View {
                 Spacer()
                     .frame(width: 24)
 
+                sortChip(.forYou, L10n.categoriesForYou)
                 sortChip(.popular, L10n.categoriesPopular)
                 sortChip(.topRated, L10n.categoriesTopRated)
                 sortChip(.newest, L10n.categoriesNewest)

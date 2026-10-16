@@ -23,6 +23,12 @@ struct DiscoverSettingsView: View {
     @Default(.Discover.seerrAPIKey)
     private var seerrAPIKey
 
+    @Default(.Discover.profile)
+    private var profile
+
+    @Router
+    private var router
+
     @State
     private var didReset = false
     @State
@@ -129,8 +135,16 @@ struct DiscoverSettingsView: View {
             }
 
             Section {
+                ChevronButton(
+                    L10n.discoverYourRatings,
+                    content: "\(profile.ratedTitles().values.count(where: { $0.level != .neutral }))"
+                ) {
+                    router.route(to: .discoverRatings)
+                }
+
                 Button {
                     Defaults[.Discover.profile] = .init()
+                    DiscoverArtworkStore.shared.clear()
                     Task { await TMDBClient.shared.clearCache() }
                     didReset = true
                 } label: {

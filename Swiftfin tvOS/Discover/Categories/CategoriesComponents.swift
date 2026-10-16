@@ -25,13 +25,15 @@ enum CategoriesLayout {
 // MARK: - Chips
 
 /// Liquid Glass chip: glass while unfocused (tinted when selected), solid white with a dark label when focused.
+/// With `solidSelection`, the selected chip is white with a dark label too (segmented choices).
 struct GlassChipButtonStyle: ButtonStyle {
 
     var isSelected = false
     var isCircle = false
+    var solidSelection = false
 
     func makeBody(configuration: Configuration) -> some View {
-        GlassChipBody(configuration: configuration, isSelected: isSelected, isCircle: isCircle)
+        GlassChipBody(configuration: configuration, isSelected: isSelected, isCircle: isCircle, solidSelection: solidSelection)
     }
 }
 
@@ -45,9 +47,14 @@ private struct GlassChipBody: View {
     let configuration: ButtonStyle.Configuration
     let isSelected: Bool
     let isCircle: Bool
+    var solidSelection = false
 
     private var glass: Glass {
         isSelected ? .regular.tint(.white.opacity(0.3)) : .regular
+    }
+
+    private var isSolid: Bool {
+        isFocused || (isSelected && solidSelection)
     }
 
     var body: some View {
@@ -58,13 +65,13 @@ private struct GlassChipBody: View {
             .padding(.horizontal, isCircle ? 0 : 28)
             .padding(.vertical, isCircle ? 0 : 14)
             .frame(width: isCircle ? 72 : nil, height: isCircle ? 72 : nil)
-            .foregroundStyle(isFocused ? Color.black : Color.white.opacity(isEnabled ? 1 : 0.4))
+            .foregroundStyle(isSolid ? Color.black : Color.white.opacity(isEnabled ? 1 : 0.4))
             .background {
                 Capsule()
                     .fill(.white)
-                    .opacity(isFocused ? 1 : 0)
+                    .opacity(isFocused ? 1 : (isSolid ? 0.88 : 0))
             }
-            .glassEffect(isFocused ? .identity : glass, in: .capsule)
+            .glassEffect(isSolid ? .identity : glass, in: .capsule)
             .contentShape(.capsule)
             .scaleEffect(configuration.isPressed ? 1.02 : (isFocused ? 1.08 : 1))
             .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 16, y: 8)
@@ -205,8 +212,9 @@ struct DiscoverTitleGrid: View {
     private var router
 
     private var items: [DiscoverItem] {
-        pager.titles
-            .filter { profile.dismissed.contains($0.id) == false }
+        let hidden = profile.hiddenKeys
+        return pager.titles
+            .filter { hidden.contains($0.id) == false }
             .map { title in
                 DiscoverItem(
                     title: title,

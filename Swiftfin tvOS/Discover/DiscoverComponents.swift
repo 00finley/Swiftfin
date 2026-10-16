@@ -10,7 +10,7 @@ import SwiftUI
 
 // MARK: - Card
 
-/// 16:9 backdrop card with the service and in-library badges, title and subtitle below.
+/// 16:9 card with titled art, the service and in-library badges, and the title and subtitle below.
 struct DiscoverCard: View {
 
     let item: DiscoverItem
@@ -41,12 +41,7 @@ struct DiscoverCard: View {
         VStack(alignment: .leading, spacing: 14) {
             Button(action: action) {
                 ZStack {
-                    ImageView(TMDBClient.imageURL(item.title.backdropPath, size: "w780"))
-                        .placeholder { _ in Color.white.opacity(0.08) }
-                        .failure { Color.white.opacity(0.08) }
-                        .aspectRatio(16 / 9, contentMode: .fill)
-                        .frame(width: width, height: width * 9 / 16)
-                        .clipped()
+                    DiscoverCardArtwork(title: item.title, width: width)
 
                     if let provider = item.providers.first {
                         DiscoverProviderLogos(providers: [provider], size: 40)

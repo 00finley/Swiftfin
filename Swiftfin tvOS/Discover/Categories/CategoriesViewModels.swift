@@ -16,6 +16,8 @@ import Foundation
 final class DiscoverTitlePager: ObservableObject {
 
     typealias Source = @Sendable (Int) async throws -> TMDBPage
+    /// Reorders one batch of new titles before they're appended (For You, search).
+    typealias Reorder = @MainActor ([DiscoverTitle]) async -> [DiscoverTitle]
 
     enum Phase: Equatable {
         case idle
@@ -32,6 +34,8 @@ final class DiscoverTitlePager: ObservableObject {
     private(set) var isLoadingMore = false
 
     private var sources: [Source] = []
+    private var reorder: Reorder?
+    private var pagesPerBatch = 1
     private var nextPage: [Int] = []
     private var totalPages: [Int] = []
     private var seen: Set<String> = []
@@ -42,11 +46,15 @@ final class DiscoverTitlePager: ObservableObject {
         zip(nextPage, totalPages).allSatisfy { $0 > $1 }
     }
 
-    func reset(_ sources: [Source]) {
+    /// With `reorder`, each batch is `pagesPerBatch` pages from every source, reordered as a whole
+    /// and then appended, so infinite paging keeps working.
+    func reset(_ sources: [Source], pagesPerBatch: Int = 1, reorder: Reorder? = nil) {
         task?.cancel()
         task = nil
         generation += 1
         self.sources = sources
+        self.reorder = reorder
+        self.pagesPerBatch = max(1, pagesPerBatch)
         nextPage = Array(repeating: 1, count: sources.count)
         totalPages = Array(repeating: 1, count: sources.count)
         titles = []
@@ -75,9 +83,12 @@ final class DiscoverTitlePager: ObservableObject {
             var added = 0
             var rounds = 0
             var failed = false
+            var batch: [DiscoverTitle] = []
+            let minimumRounds = self.reorder == nil ? 1 : self.pagesPerBatch
+            let maximumRounds = max(3, minimumRounds)
 
             // Keep going until a screenful arrives (filters can drop many results)
-            while added < 12, rounds < 3, !self.isExhausted, !Task.isCancelled {
+            while added < 12 || rounds < minimumRounds, rounds < maximumRounds, !self.isExhausted, !Task.isCancelled {
                 rounds += 1
                 let active = self.sources.indices.filter { self.nextPage[$0] <= self.totalPages[$0] }
                 let requests = active.map { (index: $0, page: self.nextPage[$0], source: self.sources[$0]) }
@@ -117,8 +128,19 @@ final class DiscoverTitlePager: ObservableObject {
                         }
                     }
                 }
-                self.titles.append(contentsOf: fresh)
+                if self.reorder == nil {
+                    self.titles.append(contentsOf: fresh)
+                } else {
+                    batch.append(contentsOf: fresh)
+                }
                 added += fresh.count
+            }
+
+            if let reorder = self.reorder, batch.isNotEmpty, generation == self.generation {
+                let ordered = await reorder(batch)
+                guard generation == self.generation else { return }
+
+                self.titles.append(contentsOf: ordered)
             }
 
             guard generation == self.generation else { return }
@@ -176,7 +198,27 @@ final class CategoryResultsViewModel: ObservableObject {
 
             return { page in try await TMDBClient.shared.discover(kind: kind, query: parameters, page: page) }
         }
-        pager.reset(sources)
+
+        guard query.sort == .forYou else {
+            pager.reset(sources)
+            return
+        }
+
+        // For You: about three pages of popular titles per batch, reranked for the user, then appended
+        pager.reset(sources, pagesPerBatch: 3) { titles in
+            await Self.forYouOrder(titles)
+        }
+    }
+
+    /// Ranks a batch by taste; the strongest candidates also get keyword affinity
+    /// (their keywords are one small request each, cached for 30 days).
+    static func forYouOrder(_ titles: [DiscoverTitle]) async -> [DiscoverTitle] {
+        let taste = await DiscoverViewModel.shared.currentTaste()
+        let first = taste.forYouOrder(titles)
+        guard taste.keyword.isNotEmpty else { return first }
+
+        let infos = await DiscoverTitleInfoStore.shared.infos(for: first.prefix(24).map(\.id))
+        return taste.forYouOrder(titles, keywords: infos.mapValues(\.keywords))
     }
 
     func toggle(_ category: BrowseCategory) {
@@ -222,7 +264,13 @@ final class CategorySearchViewModel: ObservableObject {
                     return
                 }
 
-                self?.pager.reset([{ page in try await TMDBClient.shared.search(text, page: page) }])
+                // Exact title matches first, then a gentle nudge toward the user's taste (only when it's
+                // already known, so search never waits on it)
+                self?.pager.reset([{ page in try await TMDBClient.shared.search(text, page: page) }]) { titles in
+                    let feed = DiscoverViewModel.shared
+                    feed.prepareTaste()
+                    return (feed.taste ?? DiscoverTaste()).searchOrder(titles, query: text)
+                }
             }
             .store(in: &cancellables)
     }

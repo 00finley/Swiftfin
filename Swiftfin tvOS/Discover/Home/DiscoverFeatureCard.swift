@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import SwiftUI
 
 /// Apple TV app feature card: tall 560×700 key art with the badge, logo,
@@ -232,18 +233,28 @@ struct DiscoverTop10Card: View {
     }
 }
 
-/// More Like This / Not Interested, for long-press menus.
+/// Love It / Like It / It's OK / Not for Me, for long-press menus; the current rating is checked.
 struct DiscoverFeedbackMenu: View {
 
     let title: DiscoverTitle
     let feed: DiscoverViewModel
 
+    @Default(.Discover.profile)
+    private var profile
+
     var body: some View {
-        Button(L10n.discoverMoreLikeThis, systemImage: "hand.thumbsup") {
-            feed.moreLikeThis(title)
-        }
-        Button(L10n.discoverNotInterested, systemImage: "hand.thumbsdown", role: .destructive) {
-            feed.notInterested(title)
+        // It's OK is checked only when it overrides a seeded rating
+        let rated = profile.level(for: title.id)
+        let current: DiscoverRatingLevel? = rated == .neutral && profile.ratings[title.id] == nil ? nil : rated
+
+        ForEach(DiscoverRatingLevel.displayOrder, id: \.self) { level in
+            Button(
+                level.title,
+                systemImage: level == current ? "checkmark" : level.systemImage,
+                role: level == .disliked ? .destructive : nil
+            ) {
+                feed.rate(title, level)
+            }
         }
     }
 }

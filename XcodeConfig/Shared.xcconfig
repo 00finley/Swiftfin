@@ -9,4 +9,10 @@
 DEVELOPMENT_TEAM = 
 PRODUCT_BUNDLE_IDENTIFIER = org.jellyfin.swiftfin
 
+// Discover seed list (tvOS): titles you love from outside the app, as starting ratings.
+// Comma-separated tv:<tmdbId> or movie:<tmdbId>, optionally weighted: *2 loved, *1 liked (default),
+// *0 neutral, *-1 disliked, e.g. tv:1399*2,movie:27205. No "//" (it starts a comment here).
+// Set it in the git-ignored DevelopmentTeam.xcconfig.
+DISCOVER_SEED_TITLES =
+
 #include? "DevelopmentTeam.xcconfig"

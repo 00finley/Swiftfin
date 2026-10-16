@@ -32,6 +32,12 @@ extension NavigationRoute {
         }
     }
 
+    static var discoverRatings: NavigationRoute {
+        NavigationRoute(id: "discoverRatings") {
+            DiscoverRatingsView()
+        }
+    }
+
     static var discoverSettings: NavigationRoute {
         NavigationRoute(id: "discoverSettings") {
             DiscoverSettingsView()

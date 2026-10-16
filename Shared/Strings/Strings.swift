@@ -302,6 +302,8 @@ internal enum L10n {
   internal static let categoriesFamily = L10n.tr("Localizable", "categoriesFamily", fallback: "Family & Kids")
   /// Formats
   internal static let categoriesFormats = L10n.tr("Localizable", "categoriesFormats", fallback: "Formats")
+  /// For You
+  internal static let categoriesForYou = L10n.tr("Localizable", "categoriesForYou", fallback: "For You")
   /// Genres
   internal static let categoriesGenres = L10n.tr("Localizable", "categoriesGenres", fallback: "Genres")
   /// Languages & Countries
@@ -658,14 +660,28 @@ internal enum L10n {
   internal static func discoverAvailableOn(_ p1: Any) -> String {
     return L10n.tr("Localizable", "discoverAvailableOn", String(describing: p1), fallback: "Available on %@")
   }
+  /// Because You Liked %@
+  internal static func discoverBecauseYouLiked(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverBecauseYouLiked", String(describing: p1), fallback: "Because You Liked %@")
+  }
+  /// Because You Loved %@
+  internal static func discoverBecauseYouLoved(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "discoverBecauseYouLoved", String(describing: p1), fallback: "Because You Loved %@")
+  }
   /// Because You Watched %@
   internal static func discoverBecauseYouWatched(_ p1: Any) -> String {
     return L10n.tr("Localizable", "discoverBecauseYouWatched", String(describing: p1), fallback: "Because You Watched %@")
   }
+  /// Clear Rating
+  internal static let discoverClearRating = L10n.tr("Localizable", "discoverClearRating", fallback: "Clear Rating")
   /// Coming Soon
   internal static let discoverComingSoon = L10n.tr("Localizable", "discoverComingSoon", fallback: "Coming Soon")
   /// Details
   internal static let discoverDetails = L10n.tr("Localizable", "discoverDetails", fallback: "Details")
+  /// Seed List
+  internal static let discoverFromSeedList = L10n.tr("Localizable", "discoverFromSeedList", fallback: "Seed List")
+  /// You won't see this in Discover.
+  internal static let discoverHiddenToast = L10n.tr("Localizable", "discoverHiddenToast", fallback: "You won\'t see this in Discover.")
   /// In Library
   internal static let discoverInLibrary = L10n.tr("Localizable", "discoverInLibrary", fallback: "In Library")
   /// Couldn't load Discover. Check your internet connection and try again.
@@ -680,6 +696,8 @@ internal enum L10n {
   internal static let discoverNew = L10n.tr("Localizable", "discoverNew", fallback: "New")
   /// New on Your Services
   internal static let discoverNewOnYourServices = L10n.tr("Localizable", "discoverNewOnYourServices", fallback: "New on Your Services")
+  /// No ratings yet. Rate titles on their Discover page, with a long press on a card, or from a show or movie page.
+  internal static let discoverNoRatings = L10n.tr("Localizable", "discoverNoRatings", fallback: "No ratings yet. Rate titles on their Discover page, with a long press on a card, or from a show or movie page.")
   /// Nothing to show yet. Turn on a streaming service in Settings.
   internal static let discoverNothingYet = L10n.tr("Localizable", "discoverNothingYet", fallback: "Nothing to show yet. Turn on a streaming service in Settings.")
   /// Not Interested
@@ -692,8 +710,18 @@ internal enum L10n {
   internal static let discoverOpenInLibrary = L10n.tr("Localizable", "discoverOpenInLibrary", fallback: "Open in Library")
   /// Personalization
   internal static let discoverPersonalization = L10n.tr("Localizable", "discoverPersonalization", fallback: "Personalization")
-  /// Discover learns from what you watch in Jellyfin and from More Like This and Not Interested. It stays on this Apple TV.
-  internal static let discoverPersonalizationDescription = L10n.tr("Localizable", "discoverPersonalizationDescription", fallback: "Discover learns from what you watch in Jellyfin and from More Like This and Not Interested. It stays on this Apple TV.")
+  /// Discover learns from what you watch in Jellyfin and from your ratings. It stays on this Apple TV.
+  internal static let discoverPersonalizationDescription = L10n.tr("Localizable", "discoverPersonalizationDescription", fallback: "Discover learns from what you watch in Jellyfin and from your ratings. It stays on this Apple TV.")
+  /// Rate
+  internal static let discoverRate = L10n.tr("Localizable", "discoverRate", fallback: "Rate")
+  /// Not for Me
+  internal static let discoverRatingDisliked = L10n.tr("Localizable", "discoverRatingDisliked", fallback: "Not for Me")
+  /// Like It
+  internal static let discoverRatingLiked = L10n.tr("Localizable", "discoverRatingLiked", fallback: "Like It")
+  /// Love It
+  internal static let discoverRatingLoved = L10n.tr("Localizable", "discoverRatingLoved", fallback: "Love It")
+  /// It's OK
+  internal static let discoverRatingNeutral = L10n.tr("Localizable", "discoverRatingNeutral", fallback: "It\'s OK")
   /// Region
   internal static let discoverRegion = L10n.tr("Localizable", "discoverRegion", fallback: "Region")
   /// Reset Recommendations
@@ -714,6 +742,14 @@ internal enum L10n {
   internal static let discoverTopPicks = L10n.tr("Localizable", "discoverTopPicks", fallback: "Top Picks for You")
   /// Trending Now
   internal static let discoverTrendingNow = L10n.tr("Localizable", "discoverTrendingNow", fallback: "Trending Now")
+  /// Watch Trailer
+  internal static let discoverWatchTrailer = L10n.tr("Localizable", "discoverWatchTrailer", fallback: "Watch Trailer")
+  /// Your Ratings
+  internal static let discoverYourRatings = L10n.tr("Localizable", "discoverYourRatings", fallback: "Your Ratings")
+  /// Ratings shape Top Picks, the Because You Loved and Liked rows, and For You in Categories. Not for Me hides a title everywhere. Titles from the build's seed list are marked, and rating them here overrides the list.
+  internal static let discoverYourRatingsDescription = L10n.tr("Localizable", "discoverYourRatingsDescription", fallback: "Ratings shape Top Picks, the Because You Loved and Liked rows, and For You in Categories. Not for Me hides a title everywhere. Titles from the build\'s seed list are marked, and rating them here overrides the list.")
+  /// Install the YouTube app to watch trailers.
+  internal static let discoverYouTubeNotInstalled = L10n.tr("Localizable", "discoverYouTubeNotInstalled", fallback: "Install the YouTube app to watch trailers.")
   /// Dismiss
   internal static let dismiss = L10n.tr("Localizable", "dismiss", fallback: "Dismiss")
   /// Display order

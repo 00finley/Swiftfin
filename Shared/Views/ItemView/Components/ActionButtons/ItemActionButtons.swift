@@ -170,10 +170,21 @@ struct ItemActionButtons: View {
         .foregroundStyle(.primary, .secondary)
     }
 
+    #if os(tvOS)
+    /// Shows and movies with a TMDB id can be rated for Discover.
+    private var ratingTitle: DiscoverTitle? {
+        DiscoverTitle(libraryItem: provider.item)
+    }
+    #else
+    private var ratingTitle: Void? {
+        nil
+    }
+    #endif
+
     var body: some View {
         let hasBarMenu = UIDevice.isTV && (overflowButtons.isNotEmpty || menuButtons.isNotEmpty)
 
-        if buttons.isNotEmpty || hasBarMenu {
+        if buttons.isNotEmpty || hasBarMenu || ratingTitle != nil {
             HStack(alignment: .center, spacing: UIDevice.isTV ? 24 : 8) {
                 ForEach(buttons) { button in
                     Self.view(for: button)
@@ -181,6 +192,23 @@ struct ItemActionButtons: View {
                         .focused(focusedButton, equals: button.id)
                         .focusCaption(button.focusCaption, isVisible: focusedButton.wrappedValue == button.id)
                 }
+
+                #if os(tvOS)
+                if let ratingTitle {
+                    DiscoverLibraryRatingMenu(title: ratingTitle) { level in
+                        Label(
+                            level == .neutral ? L10n.discoverRate : level.title,
+                            systemImage: level == .neutral ? "hand.thumbsup" : level.selectedSystemImage
+                        )
+                    }
+                    .menuStyle(.button)
+                    .labelStyle(ItemActionButtonLabelStyle())
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundStyle(.primary, .secondary)
+                    .focused(focusedButton, equals: ItemView.Component.rating)
+                    .focusCaption(L10n.discoverRate, isVisible: focusedButton.wrappedValue == ItemView.Component.rating)
+                }
+                #endif
 
                 if hasBarMenu {
                     Menu {
