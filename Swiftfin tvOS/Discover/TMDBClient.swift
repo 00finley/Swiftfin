@@ -616,3 +616,14 @@ private struct RawDetails: Decodable {
         case watchProviders = "watch/providers"
     }
 }
+
+// MARK: - Untyped access
+
+extension TMDBClient {
+
+    /// The cached, rate-limited GET for endpoints without a typed wrapper here
+    /// (Search decodes people and credits itself). Same cache keys as the typed calls.
+    func cachedData(_ path: String, query: [String: String] = [:]) async throws -> Data {
+        try await get(path, query: query)
+    }
+}
