@@ -154,6 +154,11 @@ extension Defaults.Keys {
             Key("discoverRegion", default: "US", suite: .currentUserSuite)
         }
 
+        /// Discover rows (Top Picks, Because You Watched, Top 10...) below the library rows on Home.
+        static var showOnHome: Key<Bool> {
+            Key("discoverShowOnHome", default: true, suite: .currentUserSuite)
+        }
+
         static var profile: Key<DiscoverProfile> {
             Key("discoverProfile", default: .init(), suite: .currentUserSuite)
         }

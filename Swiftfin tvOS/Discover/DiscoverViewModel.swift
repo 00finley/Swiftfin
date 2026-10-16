@@ -26,9 +26,29 @@ final class DiscoverViewModel: ObservableObject {
     private(set) var hero: DiscoverItem?
     @Published
     private(set) var rows: [DiscoverRow] = []
+    /// Jellyfin item ids keyed by TMDB key, from the last feed build.
+    @Published
+    private(set) var libraryItemIDs: [String: String] = [:]
 
     @Injected(\.currentUserSession)
     private var userSession: UserSession?
+
+    private static var sharedInstance: DiscoverViewModel?
+
+    /// One feed per signed-in user, shared by the Home rows, Categories and title pages
+    /// so feedback (More Like This, Not Interested) updates every screen.
+    static var shared: DiscoverViewModel {
+        let userID = Container.shared.currentUserSession()?.user.id
+        if let sharedInstance, sharedInstance.userID == userID {
+            return sharedInstance
+        }
+        let model = DiscoverViewModel()
+        model.userID = userID
+        sharedInstance = model
+        return model
+    }
+
+    private var userID: String?
 
     private var lastBuilt: Date?
     private var buildTask: Task<Void, Never>?
@@ -82,6 +102,7 @@ final class DiscoverViewModel: ObservableObject {
 
                 hero = feed.hero
                 rows = feed.rows
+                libraryItemIDs = feed.libraryItemIDs
                 lastBuilt = .now
                 state = .loaded
             } catch {
@@ -92,6 +113,28 @@ final class DiscoverViewModel: ObservableObject {
                 }
             }
             buildTask = nil
+        }
+    }
+
+    private var libraryTask: Task<Void, Never>?
+
+    /// Loads just the library (for "In Library" badges) when no feed has been built yet,
+    /// e.g. when Categories opens before Home's Discover rows load or with them turned off.
+    func ensureLibrary() {
+        guard libraryItemIDs.isEmpty, libraryTask == nil, buildTask == nil, let userSession else { return }
+
+        let engine = DiscoverEngine(
+            client: userSession.client,
+            userID: userSession.user.id,
+            providers: Defaults[.Discover.providers],
+            region: Defaults[.Discover.region],
+            profile: Defaults[.Discover.profile]
+        )
+        libraryTask = Task {
+            if let library = try? await engine.loadLibrary(), libraryItemIDs.isEmpty {
+                libraryItemIDs = library.itemIDsByKey
+            }
+            libraryTask = nil
         }
     }
 

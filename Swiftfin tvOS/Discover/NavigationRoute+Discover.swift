@@ -17,6 +17,21 @@ extension NavigationRoute {
         }
     }
 
+    static func categoryResults(_ category: BrowseCategory) -> NavigationRoute {
+        NavigationRoute(id: "categoryResults-\(category.id)") {
+            CategoryResultsView(category: category)
+                .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    @MainActor
+    static func categoryPicker(_ viewModel: CategoryResultsViewModel) -> NavigationRoute {
+        NavigationRoute(id: "categoryPicker-\(ObjectIdentifier(viewModel).hashValue)") {
+            CategoryPickerView(viewModel: viewModel)
+                .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
     static var discoverSettings: NavigationRoute {
         NavigationRoute(id: "discoverSettings") {
             DiscoverSettingsView()
@@ -26,13 +41,14 @@ extension NavigationRoute {
 
 extension TabItem {
 
-    static var discover: TabItem {
+    /// Browse and search TMDB by category; the Discover feed itself lives on Home.
+    static var categories: TabItem {
         TabItem(
-            id: "discover",
-            title: L10n.discover,
-            systemImage: "sparkles.tv"
+            id: "categories",
+            title: L10n.categories,
+            systemImage: "square.grid.2x2"
         ) {
-            DiscoverView()
+            CategoriesView()
                 .toolbar(.hidden, for: .navigationBar)
         }
     }

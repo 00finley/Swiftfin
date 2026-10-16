@@ -24,6 +24,8 @@ struct DiscoverEngine {
     struct Feed {
         var hero: DiscoverItem?
         var rows: [DiscoverRow]
+        /// Jellyfin item ids keyed by TMDB key ("tv-1396"), for "In Library" badges elsewhere.
+        var libraryItemIDs: [String: String] = [:]
     }
 
     /// A title the user has engaged with, used to find similar titles.
@@ -216,7 +218,7 @@ struct DiscoverEngine {
             rows.append(DiscoverRow(kind: .comingSoon, title: L10n.discoverComingSoon, items: Array(comingItems)))
         }
 
-        return Feed(hero: topItems.first ?? trendingItems.first, rows: rows)
+        return Feed(hero: topItems.first ?? trendingItems.first, rows: rows, libraryItemIDs: library.itemIDsByKey)
     }
 
     // MARK: - Library

@@ -123,6 +123,38 @@ actor TMDBClient {
         return Dictionary(lists.flatMap(\.self).map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     }
 
+    /// One page of `/discover/movie` or `/discover/tv` results.
+    func discover(kind: DiscoverTitle.Kind, query: [String: String], page: Int) async throws -> TMDBPage {
+        var query = query
+        query["page"] = String(page)
+        query["include_adult"] = "false"
+        return try await self.page("discover/\(kind.rawValue)", kind: kind, query: query)
+    }
+
+    /// Movies and shows matching a title search (people are skipped).
+    func search(_ text: String, page: Int) async throws -> TMDBPage {
+        try await self.page("search/multi", kind: nil, query: [
+            "query": text,
+            "page": String(page),
+            "include_adult": "false",
+        ])
+    }
+
+    /// Logo artwork for streaming services in a region, keyed by provider id.
+    func providerLogos(region: String) async throws -> [Int: String] {
+        async let tv = get("watch/providers/tv", query: ["watch_region": region])
+        async let movie = get("watch/providers/movie", query: ["watch_region": region])
+        var logos: [Int: String] = [:]
+        for data in try await [tv, movie] {
+            for provider in try JSONDecoder().decode(ProviderList.self, from: data).results {
+                if let path = provider.logo_path {
+                    logos[provider.provider_id] = logos[provider.provider_id] ?? path
+                }
+            }
+        }
+        return logos
+    }
+
     func clearCache() {
         memoryCache.removeAll()
         try? FileManager.default.removeItem(at: diskCacheURL)
@@ -141,6 +173,16 @@ actor TMDBClient {
     private func list(_ path: String, kind: DiscoverTitle.Kind?, query: [String: String] = [:]) async throws -> [DiscoverTitle] {
         let data = try await get(path, query: query)
         return try JSONDecoder().decode(ListResponse.self, from: data).results.compactMap { $0.title(defaultKind: kind) }
+    }
+
+    private func page(_ path: String, kind: DiscoverTitle.Kind?, query: [String: String]) async throws -> TMDBPage {
+        let data = try await get(path, query: query)
+        let response = try JSONDecoder().decode(ListResponse.self, from: data)
+        return TMDBPage(
+            titles: response.results.compactMap { $0.title(defaultKind: kind) },
+            page: response.page ?? 1,
+            totalPages: min(response.total_pages ?? 1, 500)
+        )
     }
 
     private func get(_ path: String, query: [String: String] = [:]) async throws -> Data {
@@ -244,6 +286,23 @@ actor TMDBClient {
 
 private struct ListResponse: Decodable {
     let results: [RawTitle]
+    let page: Int?
+    let total_pages: Int?
+}
+
+/// One page of list results; TMDB caps paging at 500 pages.
+struct TMDBPage {
+    let titles: [DiscoverTitle]
+    let page: Int
+    let totalPages: Int
+
+    var hasMore: Bool {
+        page < totalPages
+    }
+}
+
+private struct ProviderList: Decodable {
+    let results: [RawProvider]
 }
 
 struct RawTitle: Decodable {
@@ -333,6 +392,8 @@ struct TMDBDetails {
     let genres: [(id: Int, name: String)]
     let keywords: [Int]
     let logoPath: String?
+    /// Key art without a title treatment (language-neutral poster), for tall feature cards.
+    let textlessPosterPath: String?
     let recommendations: [DiscoverTitle]
     let similar: [DiscoverTitle]
     let providersByRegion: [String: [DiscoverProvider]]
@@ -359,6 +420,7 @@ struct TMDBDetails {
         genres = raw.genres?.map { ($0.id, $0.name) } ?? []
         keywords = (raw.keywords?.keywords ?? raw.keywords?.results ?? []).map(\.id)
         logoPath = raw.images?.logos?.first(where: { $0.iso_639_1 == "en" })?.file_path ?? raw.images?.logos?.first?.file_path
+        textlessPosterPath = raw.images?.posters?.first(where: { $0.iso_639_1 == nil })?.file_path
         recommendations = raw.recommendations?.results.compactMap { $0.title(defaultKind: kind) } ?? []
         similar = raw.similar?.results.compactMap { $0.title(defaultKind: kind) } ?? []
         providersByRegion = (raw.watchProviders?.results ?? [:]).mapValues { ($0.flatrate ?? []).map(\.provider) }
@@ -397,6 +459,7 @@ private struct RawDetails: Decodable {
         }
 
         let logos: [Image]?
+        let posters: [Image]?
     }
 
     struct Page: Decodable {

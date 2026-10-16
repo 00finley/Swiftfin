@@ -286,6 +286,50 @@ internal enum L10n {
   internal static let capabilities = L10n.tr("Localizable", "capabilities", fallback: "Capabilities")
   /// Cast & crew
   internal static let castAndCrew = L10n.tr("Localizable", "castAndCrew", fallback: "Cast & crew")
+  /// Categories
+  internal static let categories = L10n.tr("Localizable", "categories", fallback: "Categories")
+  /// Acclaimed
+  internal static let categoriesAcclaimed = L10n.tr("Localizable", "categoriesAcclaimed", fallback: "Acclaimed")
+  /// Add Category
+  internal static let categoriesAddCategory = L10n.tr("Localizable", "categoriesAddCategory", fallback: "Add Category")
+  /// Clear Search
+  internal static let categoriesClearSearch = L10n.tr("Localizable", "categoriesClearSearch", fallback: "Clear Search")
+  /// Eras
+  internal static let categoriesEras = L10n.tr("Localizable", "categoriesEras", fallback: "Eras")
+  /// Everything
+  internal static let categoriesEverything = L10n.tr("Localizable", "categoriesEverything", fallback: "Everything")
+  /// Family & Kids
+  internal static let categoriesFamily = L10n.tr("Localizable", "categoriesFamily", fallback: "Family & Kids")
+  /// Formats
+  internal static let categoriesFormats = L10n.tr("Localizable", "categoriesFormats", fallback: "Formats")
+  /// Genres
+  internal static let categoriesGenres = L10n.tr("Localizable", "categoriesGenres", fallback: "Genres")
+  /// Languages & Countries
+  internal static let categoriesLanguages = L10n.tr("Localizable", "categoriesLanguages", fallback: "Languages & Countries")
+  /// Moods & Themes
+  internal static let categoriesMoods = L10n.tr("Localizable", "categoriesMoods", fallback: "Moods & Themes")
+  /// Movies & TV
+  internal static let categoriesMoviesAndTV = L10n.tr("Localizable", "categoriesMoviesAndTV", fallback: "Movies & TV")
+  /// Newest
+  internal static let categoriesNewest = L10n.tr("Localizable", "categoriesNewest", fallback: "Newest")
+  /// No matches. Try removing a filter.
+  internal static let categoriesNoMatches = L10n.tr("Localizable", "categoriesNoMatches", fallback: "No matches. Try removing a filter.")
+  /// No movies or shows match your search.
+  internal static let categoriesNoSearchResults = L10n.tr("Localizable", "categoriesNoSearchResults", fallback: "No movies or shows match your search.")
+  /// On My Services
+  internal static let categoriesOnMyServices = L10n.tr("Localizable", "categoriesOnMyServices", fallback: "On My Services")
+  /// Popular
+  internal static let categoriesPopular = L10n.tr("Localizable", "categoriesPopular", fallback: "Popular")
+  /// Removes this category
+  internal static let categoriesRemoveHint = L10n.tr("Localizable", "categoriesRemoveHint", fallback: "Removes this category")
+  /// Search movies and shows
+  internal static let categoriesSearchPrompt = L10n.tr("Localizable", "categoriesSearchPrompt", fallback: "Search movies and shows")
+  /// Your Services
+  internal static let categoriesServices = L10n.tr("Localizable", "categoriesServices", fallback: "Your Services")
+  /// Top Rated
+  internal static let categoriesTopRated = L10n.tr("Localizable", "categoriesTopRated", fallback: "Top Rated")
+  /// TV
+  internal static let categoriesTV = L10n.tr("Localizable", "categoriesTV", fallback: "TV")
   /// Category
   internal static let category = L10n.tr("Localizable", "category", fallback: "Category")
   /// Cellular
@@ -632,6 +676,8 @@ internal enum L10n {
   }
   /// More Like This
   internal static let discoverMoreLikeThis = L10n.tr("Localizable", "discoverMoreLikeThis", fallback: "More Like This")
+  /// New
+  internal static let discoverNew = L10n.tr("Localizable", "discoverNew", fallback: "New")
   /// New on Your Services
   internal static let discoverNewOnYourServices = L10n.tr("Localizable", "discoverNewOnYourServices", fallback: "New on Your Services")
   /// Nothing to show yet. Turn on a streaming service in Settings.
@@ -656,8 +702,14 @@ internal enum L10n {
   internal static func discoverSeasons(_ p1: Any) -> String {
     return L10n.tr("Localizable", "discoverSeasons", String(describing: p1), fallback: "%@ Seasons")
   }
+  /// Show Discover on Home
+  internal static let discoverShowOnHome = L10n.tr("Localizable", "discoverShowOnHome", fallback: "Show Discover on Home")
+  /// Top Picks, Because You Watched, Top 10 and more appear below your library rows on Home.
+  internal static let discoverShowOnHomeDescription = L10n.tr("Localizable", "discoverShowOnHomeDescription", fallback: "Top Picks, Because You Watched, Top 10 and more appear below your library rows on Home.")
   /// Streaming Services
   internal static let discoverStreamingServices = L10n.tr("Localizable", "discoverStreamingServices", fallback: "Streaming Services")
+  /// Top 10 This Week
+  internal static let discoverTop10 = L10n.tr("Localizable", "discoverTop10", fallback: "Top 10 This Week")
   /// Top Picks for You
   internal static let discoverTopPicks = L10n.tr("Localizable", "discoverTopPicks", fallback: "Top Picks for You")
   /// Trending Now

@@ -15,6 +15,8 @@ struct DiscoverSettingsView: View {
     private var providers
     @Default(.Discover.region)
     private var region
+    @Default(.Discover.showOnHome)
+    private var showOnHome
 
     @Default(.Discover.seerrURL)
     private var seerrURL
@@ -49,6 +51,14 @@ struct DiscoverSettingsView: View {
 
     var body: some View {
         Form(systemImage: "sparkles.tv") {
+            Section {
+                Toggle(L10n.discoverShowOnHome, isOn: $showOnHome)
+            } header: {
+                Text(L10n.home)
+            } footer: {
+                Text(L10n.discoverShowOnHomeDescription)
+            }
+
             Section(L10n.discoverStreamingServices) {
                 ForEach(DiscoverProvider.supported) { provider in
                     Toggle(provider.name, isOn: Binding(

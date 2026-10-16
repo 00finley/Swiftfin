@@ -110,5 +110,12 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
                     posterDisplayType: .landscape
                 )
             }
+
+        #if os(tvOS)
+        // Discover rows (TMDB) below the library rows; loads on its own, never blocks Home
+        if TMDBClient.isAvailable {
+            DiscoverHomeContentGroup()
+        }
+        #endif
     }
 }
