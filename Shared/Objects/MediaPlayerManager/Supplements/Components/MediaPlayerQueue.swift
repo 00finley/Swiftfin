@@ -17,6 +17,10 @@ protocol MediaPlayerQueue: ObservableObject, MediaPlayerObserver, MediaPlayerSup
     var nextItem: MediaPlayerItemProvider? { get }
     var previousItem: MediaPlayerItemProvider? { get }
 
+    /// Plays `nextItem` when the current item ends even with next episode autoplay turned off.
+    /// Channels (`Swiftfin tvOS/Channels`) always move on to their next episode.
+    var autoPlaysNextItem: Bool { get }
+
     var hasNextItemPublisher: Published<Bool>.Publisher { get set }
     var hasPreviousItemPublisher: Published<Bool>.Publisher { get set }
     var nextItemPublisher: Published<MediaPlayerItemProvider?>.Publisher { get set }
@@ -31,6 +35,10 @@ extension MediaPlayerQueue {
 
     var hasPreviousItem: Bool {
         previousItem != nil
+    }
+
+    var autoPlaysNextItem: Bool {
+        false
     }
 }
 
@@ -59,6 +67,10 @@ class AnyMediaPlayerQueue: MediaPlayerQueue {
 
     var id: String {
         wrapped.id
+    }
+
+    var autoPlaysNextItem: Bool {
+        wrapped.autoPlaysNextItem
     }
 
     weak var manager: MediaPlayerManager? {

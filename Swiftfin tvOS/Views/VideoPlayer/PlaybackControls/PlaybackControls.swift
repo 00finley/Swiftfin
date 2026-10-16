@@ -61,6 +61,10 @@ extension VideoPlayer {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .padding(.horizontal, Self.horizontalMargin)
+            // Channels: Up Next card and what's playing (nothing unless a channel is playing)
+            .overlay {
+                ChannelPlayerOverlay()
+            }
             .focusSection()
             .coordinatedFocus(ViewState.Focus.controls)
             .animation(.easeInOut(duration: 0.25), value: viewState.isPresentingSupplement)

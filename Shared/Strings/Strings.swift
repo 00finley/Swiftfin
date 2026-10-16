@@ -438,6 +438,54 @@ internal enum L10n {
   internal static let channelLayout = L10n.tr("Localizable", "channelLayout", fallback: "Channel layout")
   /// Channels
   internal static let channels = L10n.tr("Localizable", "channels", fallback: "Channels")
+  /// Adult Animation
+  internal static let channelsAdultAnimation = L10n.tr("Localizable", "channelsAdultAnimation", fallback: "Adult Animation")
+  /// Count as Watched
+  internal static let channelsCountAsWatched = L10n.tr("Localizable", "channelsCountAsWatched", fallback: "Count as Watched")
+  /// When on, watching the channel updates Next Up, Resume and played state
+  internal static let channelsCountAsWatchedHint = L10n.tr("Localizable", "channelsCountAsWatchedHint", fallback: "When on, watching the channel updates Next Up, Resume and played state")
+  /// Edit Shows
+  internal static let channelsEditShows = L10n.tr("Localizable", "channelsEditShows", fallback: "Edit Shows")
+  /// %@ plays random full episodes from the shows turned on here.
+  internal static func channelsEditShowsDescription(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "channelsEditShowsDescription", String(describing: p1), fallback: "%@ plays random full episodes from the shows turned on here.")
+  }
+  /// Matches This Channel
+  internal static let channelsMatchingShows = L10n.tr("Localizable", "channelsMatchingShows", fallback: "Matches This Channel")
+  /// Next Episode
+  internal static let channelsNextEpisode = L10n.tr("Localizable", "channelsNextEpisode", fallback: "Next Episode")
+  /// There are no shows in your library.
+  internal static let channelsNoShowsInLibrary = L10n.tr("Localizable", "channelsNoShowsInLibrary", fallback: "There are no shows in your library.")
+  /// This channel has no episodes to play. Turn on some shows in Edit Shows.
+  internal static let channelsNothingToPlay = L10n.tr("Localizable", "channelsNothingToPlay", fallback: "This channel has no episodes to play. Turn on some shows in Edit Shows.")
+  /// Now: %@
+  internal static func channelsNow(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "channelsNow", String(describing: p1), fallback: "Now: %@")
+  }
+  /// Off
+  internal static let channelsOff = L10n.tr("Localizable", "channelsOff", fallback: "Off")
+  /// On
+  internal static let channelsOn = L10n.tr("Localizable", "channelsOn", fallback: "On")
+  /// 1 show
+  internal static let channelsOneShow = L10n.tr("Localizable", "channelsOneShow", fallback: "1 show")
+  /// Other Shows
+  internal static let channelsOtherShows = L10n.tr("Localizable", "channelsOtherShows", fallback: "Other Shows")
+  /// Play Now
+  internal static let channelsPlayNow = L10n.tr("Localizable", "channelsPlayNow", fallback: "Play Now")
+  /// Reset to Default
+  internal static let channelsResetShows = L10n.tr("Localizable", "channelsResetShows", fallback: "Reset to Default")
+  /// %@ shows
+  internal static func channelsShowCount(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "channelsShowCount", String(describing: p1), fallback: "%@ shows")
+  }
+  /// Random full episodes, back to back
+  internal static let channelsTagline = L10n.tr("Localizable", "channelsTagline", fallback: "Random full episodes, back to back")
+  /// Up Next
+  internal static let channelsUpNext = L10n.tr("Localizable", "channelsUpNext", fallback: "Up Next")
+  /// Up next: %@
+  internal static func channelsUpNextShow(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "channelsUpNextShow", String(describing: p1), fallback: "Up next: %@")
+  }
   /// Chapter
   internal static let chapter = L10n.tr("Localizable", "chapter", fallback: "Chapter")
   /// An image associated with a specific chapter marker within the item's timeline.
