@@ -53,6 +53,14 @@ final class UserSession {
         self.user = user
     }
 
+    /// Same server, user, access token and server URL, so swapping sessions would change nothing.
+    func isEquivalent(to other: UserSession) -> Bool {
+        server == other.server &&
+            user == other.user &&
+            user.accessToken == other.user.accessToken &&
+            client.configuration.url == other.server.effectiveServerURL
+    }
+
     @MainActor
     func willStart() async {
         observeItemChanges()

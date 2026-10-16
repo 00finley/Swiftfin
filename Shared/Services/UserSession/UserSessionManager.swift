@@ -104,7 +104,15 @@ final class UserSessionManager: ObservableObject {
     @MainActor
     private func refreshCurrentSession() async {
         do {
-            try await updateCurrentSession(with: resolveStoredSession())
+            let storedSession = try resolveStoredSession()
+
+            // Replacing an unchanged session stops it and invalidates every open
+            // screen's item store (StoreError.invalidSession), so keep it.
+            if let currentSession, let storedSession, currentSession.isEquivalent(to: storedSession) {
+                return
+            }
+
+            try await updateCurrentSession(with: storedSession)
         } catch {
             logger.error(
                 "Unable to refresh current user session",
