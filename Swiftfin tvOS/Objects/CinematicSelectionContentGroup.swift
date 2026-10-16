@@ -37,9 +37,6 @@ struct CinematicSelectionContentGroup: ContentGroup {
 
     private struct SelectionView: View {
 
-        @Environment(\.frameForParentView)
-        private var frameForParentView
-
         @ObservedObject
         var viewModel: CinematicSelectionContentGroupViewModel
 
@@ -52,19 +49,21 @@ struct CinematicSelectionContentGroup: ContentGroup {
         @FocusState
         private var isHeroFocused
 
+        /// A card in the hero's row has focus (rather than the hero's buttons)
+        @State
+        private var isRowFocused = false
+
         private func heroOptions(showsUpNext: Bool) -> ContentGroupParentOption {
             var options: ContentGroupParentOption = .ignoreSafeAreaTop
-            if isHeroFocused {
+            if isRowFocused {
+                options.insert(.pinsHeroRow)
+            } else if isHeroFocused {
                 options.insert(.pinsToTop)
             }
             if showsUpNext, preview.isImmersive {
                 options.insert(.immersiveHero)
             }
             return options
-        }
-
-        private var parentFrame: CGRect {
-            frameForParentView[.scrollView, default: .zero].frame
         }
 
         private func itemSelectorImageSource(for item: BaseItemDto) -> ImageSource? {
@@ -129,25 +128,42 @@ struct CinematicSelectionContentGroup: ContentGroup {
             return joined.isEmpty ? nil : joined
         }
 
+        /// Plays the item. While its preview is on screen, playback continues from the preview's
+        /// current position instead of the saved one (the preview never saves its position, so the
+        /// server still has where the preview started).
+        private func play(_ snapshot: BaseItemDto) {
+            var provider = snapshot.getPlaybackItemProvider(userSession: nil)
+
+            if let ticks = preview.continuationTicks(for: snapshot.id) {
+                // The players start `resumeOffset` seconds before the given position; add it back so
+                // playback picks up exactly where the preview is
+                let startTicks = ticks + Defaults[.VideoPlayer.resumeOffset] * 10_000_000
+
+                provider = provider?.modifyingItem { value in
+                    var data = value.userData ?? UserItemDataDto(key: value.id ?? "")
+                    data.playbackPositionTicks = startTicks
+                    value.userData = data
+                }
+            }
+
+            guard let provider else { return }
+
+            preview.focusChanged(to: nil)
+            router.route(
+                to: .videoPlayer(
+                    provider: provider,
+                    queue: snapshot.type == .episode ? EpisodeMediaPlayerQueue(episode: snapshot) : nil
+                )
+            )
+        }
+
         /// Selecting the card while its preview is playing continues into full playback from the
         /// preview's position; otherwise it opens the item.
         private func select(_ item: ItemEntry) {
             let snapshot = item.snapshot
 
-            if let ticks = preview.currentTicks(for: snapshot.id),
-               let provider = snapshot.getPlaybackItemProvider(userSession: nil)?.modifyingItem({ value in
-                   var data = value.userData ?? UserItemDataDto(key: value.id ?? "")
-                   data.playbackPositionTicks = ticks
-                   value.userData = data
-               })
-            {
-                preview.focusChanged(to: nil)
-                router.route(
-                    to: .videoPlayer(
-                        provider: provider,
-                        queue: snapshot.type == .episode ? EpisodeMediaPlayerQueue(episode: snapshot) : nil
-                    )
-                )
+            if preview.isShowing(snapshot.id), snapshot.isHeroPlayable {
+                play(snapshot)
             } else {
                 router.route(to: .item(item: snapshot))
             }
@@ -201,7 +217,9 @@ struct CinematicSelectionContentGroup: ContentGroup {
 
                 if snapshot.isHeroPlayable {
                     HStack(spacing: 20) {
-                        HeroPlayButton(item: snapshot)
+                        HeroPlayButton(item: snapshot) {
+                            play(snapshot)
+                        }
 
                         HeroFavoriteButton(item: item)
 
@@ -224,6 +242,7 @@ struct CinematicSelectionContentGroup: ContentGroup {
             CinematicItemSelector(
                 items: items,
                 title: showsUpNext ? viewModel.upNextViewModel.library.parent.displayTitle : L10n.recentlyAdded.localizedCapitalized,
+                isRowFocused: $isRowFocused,
                 preview: showsUpNext ? preview : nil,
                 previewItem: { $0.snapshot },
                 caption: { cardCaption(for: $0.snapshot) }
@@ -452,22 +471,11 @@ private struct HeroGlassButtonBody<S: InsettableShape>: View {
 /// Resume/Play capsule for the hero.
 private struct HeroPlayButton: View {
 
-    @Router
-    private var router
-
     let item: BaseItemDto
+    let action: () -> Void
 
     var body: some View {
-        Button {
-            guard let provider = item.getPlaybackItemProvider(userSession: nil) else { return }
-
-            router.route(
-                to: .videoPlayer(
-                    provider: provider,
-                    queue: item.type == .episode ? EpisodeMediaPlayerQueue(episode: item) : nil
-                )
-            )
-        } label: {
+        Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: "play.fill")
 

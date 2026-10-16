@@ -18,20 +18,16 @@ struct CinematicCardCaption {
 
 /// Apple TV-style Home hero, laid out from measurements of the Apple TV app at 1920x1080:
 /// bright full-bleed art of the focused item, its details from ~35% of the screen height, and
-/// the row's 16:9 cards cut off by the bottom edge. The next group starts below the fold.
+/// the row's 16:9 cards cut off by the bottom edge while the hero's buttons have focus. When the
+/// row has focus the page scrolls up by `CinematicHeroLayout.rowFocusedScrollOffset` (see
+/// `isRowFocused`), so the whole row is on screen and the next group's title peeks below it.
 struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
-
-    @Environment(\.frameForParentView)
-    private var frameForParentView
 
     @FocusState
     private var isSectionFocused
 
     @FocusState
     private var focusedCardID: Item.ID?
-
-    @FocusedValue(\.focusedPoster)
-    private var focusedPoster
 
     @State
     private var selectedPoster: AnyPoster?
@@ -41,6 +37,15 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
     /// the first card; pressing up from the row reaches the buttons as usual afterwards.
     @State
     private var isTopContentFocusable = false
+
+    /// The screen's initial focus has settled (see `requestInitialFocus`)
+    @State
+    private var isInitialFocusSettled = false
+
+    /// Whether one of the row's cards has focus. The page scrolls to the row while it's true, so
+    /// the backdrop and the immersive video move down by the same amount to keep filling the screen.
+    @Binding
+    private var isRowFocused: Bool
 
     @ObservedObject
     private var preview: HomePreviewController
@@ -55,6 +60,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
     init(
         items: [Item],
         title: String? = nil,
+        isRowFocused: Binding<Bool> = .constant(false),
         preview: HomePreviewController? = nil,
         previewItem: ((Item) -> BaseItemDto?)? = nil,
         caption: @escaping (Item) -> CinematicCardCaption = { CinematicCardCaption(text: $0.displayTitle) },
@@ -62,16 +68,13 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
         @ViewBuilder topContent: @escaping (Item) -> TopContent
     ) {
         self.items = items
+        self._isRowFocused = isRowFocused
         self.title = title
         self.preview = preview ?? .disabled
         self.previewItem = preview == nil ? nil : previewItem
         self.caption = caption
         self.action = action
         self.topContent = topContent
-    }
-
-    private var parentFrame: CGRect {
-        frameForParentView[.scrollView, default: .zero].frame
     }
 
     private var resolvedSelectedPoster: AnyPoster? {
@@ -92,19 +95,66 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
         return preview.visibleItemID == itemID
     }
 
-    private func updateSelectedPoster() {
-        guard isSectionFocused, let focusedPoster else {
-            if !isSectionFocused, previewItem != nil {
-                preview.focusChanged(to: nil)
+    /// How far the backdrop and the immersive video move down so they keep covering the screen
+    /// while the page is scrolled to the row.
+    private var backdropOffset: CGFloat {
+        isRowFocused ? CinematicHeroLayout.rowFocusedScrollOffset : 0
+    }
+
+    /// Follows the row's own focus state rather than the scene-wide focused value, and runs for the
+    /// initial value too: when Home opens with a card already focused there is no later change, and
+    /// the preview, the selection and the hero's buttons would otherwise wait for focus to move.
+    private func updateSelection() {
+        let focusedItem = focusedCardID.flatMap { id in items.first(where: { $0.id == id }) }
+        let rowFocused = focusedItem != nil
+
+        if rowFocused != isRowFocused {
+            withAnimation(CinematicHeroLayout.scrollAnimation) {
+                isRowFocused = rowFocused
             }
-            return
         }
 
-        selectedPoster = focusedPoster
-        isTopContentFocusable = true
+        if let focusedItem {
+            selectedPoster = AnyPoster(focusedItem)
+            if isInitialFocusSettled {
+                isTopContentFocusable = true
+            }
 
-        if let previewItem {
-            preview.focusChanged(to: selectedItem.flatMap(previewItem))
+            if let previewItem {
+                preview.focusChanged(to: previewItem(focusedItem))
+            }
+        } else if !isSectionFocused, previewItem != nil {
+            // Focus left the hero; while the hero's buttons have focus the preview keeps playing
+            preview.focusChanged(to: nil)
+        }
+
+        // Moving between the row and the hero's buttons is interaction too: restart the wait before
+        // the UI steps aside, so it doesn't go immersive while the user is navigating
+        if isSectionFocused, previewItem != nil {
+            preview.userDidInteract()
+        }
+    }
+
+    /// Home opens on the first card. Initial focus is otherwise up to the focus engine, which can
+    /// pick the sidebar or a later group (the row's cards may not be laid out yet when it looks), and
+    /// can re-run after the loading placeholder goes away. So keep claiming the first card while the
+    /// screen settles, and only then let the hero's buttons take focus (enabled any earlier, the
+    /// engine's pass picks them, as the top-left-most control).
+    private func requestInitialFocus() async {
+        guard !isInitialFocusSettled, let firstID = items.first?.id else { return }
+
+        for _ in 0 ..< 6 {
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled else { return }
+
+            if focusedCardID == nil {
+                focusedCardID = firstID
+            }
+        }
+
+        isInitialFocusSettled = true
+        if focusedCardID != nil {
+            isTopContentFocusable = true
         }
     }
 
@@ -151,6 +201,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                     .scaleEffect(preview.videoScale)
                     .frame(height: CinematicHeroLayout.screenHeight)
                     .clipped()
+                    .offset(y: backdropOffset)
                     .opacity(isImmersive ? 1 : 0)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
@@ -161,11 +212,14 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                 preview.userDidInteract()
             }
         }
-        .onChange(of: focusedPoster) {
-            updateSelectedPoster()
+        .onChange(of: focusedCardID, initial: true) {
+            updateSelection()
         }
-        .onChange(of: isSectionFocused) {
-            updateSelectedPoster()
+        .onChange(of: isSectionFocused, initial: true) {
+            updateSelection()
+        }
+        .task(id: items.first?.id) {
+            await requestInitialFocus()
         }
         .onDisappear {
             if previewItem != nil {
@@ -189,6 +243,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                         action(item)
                     }
                     .focused($focusedCardID, equals: item.id)
+                    .accessibilityIdentifier("home.nextUp.card")
                 }
             }
             .padding(.horizontal, CinematicHeroLayout.leadingMargin)
@@ -197,6 +252,8 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
         }
         .scrollClipDisabled()
         .scrollIndicators(.hidden)
+        // Its own height, so the fixed-height hero can't squeeze it and shift the cards
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, -24)
         .focusSection()
         .defaultFocus($focusedCardID, items.first?.id, priority: .userInitiated)
@@ -252,6 +309,7 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
         }
         .frame(height: CinematicHeroLayout.screenHeight)
         .clipped()
+        .offset(y: backdropOffset)
     }
 }
 
@@ -370,14 +428,24 @@ enum CinematicHeroLayout {
     /// Row title (Headline, 46pt line) centered at ~899, cards at 932
     static let heroToRowTitle: CGFloat = 98
     static let rowTitleHeight: CGFloat = 46
-    /// The card button style adds ~19pt above the artwork, so this lands the cards at ~932
-    static let rowTitleToCards: CGFloat = -9
+    /// Space between the row title's line box and the cards' artwork (measured: cards at ~932)
+    static let rowTitleToCards: CGFloat = 10
 
     static let cardWidth: CGFloat = 320
     static let cardHeight: CGFloat = 180
     static let cardSpacing: CGFloat = 40
     static let cardCornerRadius: CGFloat = 16
 
-    /// Cards start at 932 and run past the bottom edge (only their top ~148pt is on screen)
-    static let containerHeight: CGFloat = 1150
+    /// Cards start at 932 and run past the bottom edge (only their top ~148pt is on screen) while
+    /// the hero's buttons have focus. The group ends with the cards (932 + 180), so with Home's 60pt
+    /// group spacing the next group's title sits ~70pt below them, like the Apple TV app's rows.
+    static let containerHeight: CGFloat = 1112
+
+    /// Page scroll while the row has focus: row title at ~676, cards at ~732 (the focused card ends
+    /// at ~922, inside the 60pt bottom safe area), the hero's details stay on screen above the row
+    /// (logo box from ~140), and the next group's title peeks fully at ~980 rather than being cut in
+    /// half by the bottom edge.
+    static let rowFocusedScrollOffset: CGFloat = 200
+
+    static let scrollAnimation: Animation = .easeOut(duration: 0.35)
 }

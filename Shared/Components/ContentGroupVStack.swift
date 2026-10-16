@@ -21,6 +21,12 @@ struct ContentGroupVStack: View {
         #endif
     }
 
+    /// Scroll target placed one group spacing above a group, so scrolling a group to the top leaves
+    /// its header inside the 60pt top safe area instead of under the screen edge.
+    static func scrollAnchorID(for groupID: String) -> String {
+        "\(groupID)-scrollAnchor"
+    }
+
     @ViewBuilder
     private func makeGroupBody(_ group: some ContentGroup) -> some View {
         group.body(with: group.viewModel)
@@ -33,6 +39,12 @@ struct ContentGroupVStack: View {
                     .eraseToAnyView()
                     .coordinatedFocus(group.id)
                     .id(group.id)
+                    .background(alignment: .top) {
+                        Color.clear
+                            .frame(height: spacing)
+                            .id(Self.scrollAnchorID(for: group.id))
+                            .padding(.top, -spacing)
+                    }
                     .opacity(isHeroImmersive && index > 0 ? 0 : 1)
             }
         }
