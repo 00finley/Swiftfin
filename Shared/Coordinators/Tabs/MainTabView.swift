@@ -39,6 +39,9 @@ struct MainTabView: View {
         #else
         TabCoordinator {
             TabItem.contentGroup(provider: DefaultContentGroupProvider())
+            if TMDBClient.isAvailable {
+                TabItem.discover
+            }
             TabItem.library(
                 title: L10n.tvShowsCapitalized,
                 systemName: "tv",

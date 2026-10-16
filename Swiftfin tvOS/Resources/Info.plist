@@ -48,6 +48,8 @@
 	</dict>
 	<key>SwiftfinSharedKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)org.jellyfin.swiftfin.shared</string>
+	<key>TMDBReadAccessToken</key>
+	<string>$(TMDB_READ_TOKEN)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>NotoSansCJK-Regular.ttc</string>
