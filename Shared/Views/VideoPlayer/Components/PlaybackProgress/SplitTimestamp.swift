@@ -40,11 +40,16 @@ extension VideoPlayer.PlaybackControls {
 
         private var previewXOffset: CGFloat {
             let p = contentSize.width * scrubbedProgress - (leadingTimestampSize.width / 2)
-            return clamp(p, min: 0, max: contentSize.width - leadingTimestampSize.width)
+            return clamp(p, min: 0, max: max(0, contentSize.width - leadingTimestampSize.width - Self.glyphAllowance))
         }
 
+        /// tvOS: space between the time and the play / pause glyph after it
+        private static let glyphSpacing: CGFloat = 10
+        /// tvOS: room for the glyph when checking for overlap with the trailing time
+        private static let glyphAllowance: CGFloat = UIDevice.isTV ? 50 : 0
+
         private var shouldHideTrailingTimestamp: Bool {
-            let leadingTimestampMaxX = previewXOffset + leadingTimestampSize.width
+            let leadingTimestampMaxX = previewXOffset + leadingTimestampSize.width + Self.glyphAllowance
             let trailingTimestampMinX = contentSize.width - trailingTimestampSize.width
 
             return leadingTimestampMaxX >= trailingTimestampMinX
@@ -152,9 +157,19 @@ extension VideoPlayer.PlaybackControls {
             .trackingSize($trailingTimestampSize)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .overlay(alignment: .leading) {
-                Text(scrubbedSeconds, format: .runtime)
-                    .trackingSize($leadingTimestampSize)
-                    .offset(x: previewXOffset)
+                // Apple TV app: the time centered under the playhead, with a play / pause glyph after it.
+                // Only the time's width counts for centering.
+                HStack(spacing: Self.glyphSpacing) {
+                    Text(scrubbedSeconds, format: .runtime)
+                        .trackingSize($leadingTimestampSize)
+
+                    if UIDevice.isTV, !isScrubbing {
+                        Image(systemName: manager.playbackRequestStatus == .paused ? "pause.circle" : "play.circle")
+                            .fontWeight(.regular)
+                    }
+                }
+                .fixedSize()
+                .offset(x: previewXOffset)
             }
             .font(.caption)
             .fontWeight(UIDevice.isTV ? .medium : nil)

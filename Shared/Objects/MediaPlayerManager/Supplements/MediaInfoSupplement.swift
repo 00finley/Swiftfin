@@ -58,7 +58,7 @@ extension MediaInfoSupplement {
                         if let premiereDateLabel = item.premiereDateLabel {
                             Text(premiereDateLabel)
                         }
-                        if let seasonEpisodeLocator = item.seasonEpisodeLabel {
+                        if let seasonEpisodeLocator = item.playerEpisodeLocator ?? item.seasonEpisodeLabel {
                             Text(seasonEpisodeLocator)
                         }
                     } else if let premiereYear = item.premiereDateYear {

@@ -260,7 +260,7 @@ extension EpisodeMediaPlayerQueue {
                                 .multilineTextAlignment(.leading)
 
                             DotHStack {
-                                if let subtitle = item.subtitle {
+                                if let subtitle = item.snapshot.playerEpisodeLocator ?? item.subtitle {
                                     Text(subtitle)
                                 }
 

@@ -12,7 +12,13 @@ extension VideoPlayer.UIContainerViewController {
 
     struct SupplementContainerView: View {
 
-        private static let buttonSpacing: CGFloat = UIDevice.isTV ? 20 : 10
+        private static let buttonSpacing: CGFloat = UIDevice.isTV ? 24 : 10
+
+        #if os(tvOS)
+        /// Apple TV app: the tabs' centers sit at y 1002, 17 pt below the top of the container
+        /// (which starts 126 pt above the bottom of the screen)
+        static let tabsTopPadding: CGFloat = 17
+        #endif
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets
@@ -77,10 +83,16 @@ extension VideoPlayer.UIContainerViewController {
         @ViewBuilder
         private var tabButtons: some View {
             AlternateLayoutView {
+                #if os(tvOS)
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .frame(height: PlayerTabTrack<[Int], Int>.height)
+                #else
                 // swiftlint:disable:next hard_coded_display_string
                 Button("Hidden") {}
                     .frame(maxWidth: .infinity)
                     .disabled(true)
+                #endif
             } content: { (size: CGSize) in
                 HStack(spacing: Self.buttonSpacing) {
                     #if os(iOS)
@@ -89,6 +101,20 @@ extension VideoPlayer.UIContainerViewController {
                     }
                     #endif
 
+                    #if os(tvOS)
+                    // Apple TV app: 62 pt glass capsule tabs
+                    PlayerTabTrack(
+                        viewState.supplements,
+                        id: \.id,
+                        title: \.displayTitle,
+                        selection: viewState.selectedSupplementID,
+                        focus: $focusedElement,
+                        spacing: Self.buttonSpacing
+                    ) { supplement in
+                        viewState.selectedSupplementID = supplement.id
+                    }
+                    .coordinatedFocus(ViewState.Focus.supplementTabs)
+                    #else
                     SelectionTrack(
                         viewState.supplements,
                         id: \.id,
@@ -97,18 +123,19 @@ extension VideoPlayer.UIContainerViewController {
                         focus: $focusedElement,
                         spacing: Self.buttonSpacing
                     ) { supplement in
-                        if UIDevice.isTV {
-                            viewState.selectedSupplementID = supplement.id
-                        } else {
-                            viewState.selectedSupplementID = viewState.selectedSupplementID == supplement.id ? nil : supplement.id
-                            UIDevice.impact(.light)
-                        }
+                        viewState.selectedSupplementID = viewState.selectedSupplementID == supplement.id ? nil : supplement.id
+                        UIDevice.impact(.light)
                     }
                     .coordinatedFocus(ViewState.Focus.supplementTabs)
+                    #endif
                 }
                 .scrollIfLargerThanContainer(axes: .horizontal, alignment: .leading)
             }
-            .edgePadding(.horizontal)
+            #if os(tvOS)
+            .padding(.horizontal, VideoPlayer.PlaybackControls.horizontalMargin)
+            #else
+                .edgePadding(.horizontal)
+            #endif
             #if os(tvOS)
             // Menu dismissal can restore a tab before the content finishes appearing.
             // Keep tabs out of the focus engine until the requested control receives focus.
@@ -176,7 +203,11 @@ extension VideoPlayer.UIContainerViewController {
                 }
                 .isVisible(viewState.visibleElements.contains(.supplements))
                 .enabled(viewState.visibleElements.contains(.supplements))
-                .padding(.top, EdgeInsets.edgeInsets.bottom / (UIDevice.isTV ? 2 : 1))
+                #if os(tvOS)
+                .padding(.top, Self.tabsTopPadding)
+                #else
+                .padding(.top, EdgeInsets.edgeInsets.bottom)
+                #endif
                 .animation(.linear(duration: 0.25), value: viewState.presentation)
                 .animation(.linear(duration: 0.1), value: viewState.isScrubbing)
                 .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: viewState.supplements.map(\.id))

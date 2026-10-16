@@ -83,6 +83,11 @@ extension VideoPlayer.PlaybackControls.Toolbar {
             resolvedActionButtons(rawMenuActionButtons)
         }
 
+        /// The sleep timer always sits at the top of the "..." menu (not for live TV)
+        private var showsSleepTimer: Bool {
+            !manager.item.isLiveStream
+        }
+
         private var menuSystemImage: String {
             if UIDevice.isTV || UIDevice.supportsLiquidGlass {
                 "ellipsis"
@@ -133,6 +138,12 @@ extension VideoPlayer.PlaybackControls.Toolbar {
             let menuButtons = menuActionButtons.subtracting(barActionButtons)
 
             Menu {
+                if showsSleepTimer {
+                    SleepTimerMenu()
+
+                    Divider()
+                }
+
                 ForEach(
                     barButtons,
                     content: view(for:)
@@ -162,8 +173,16 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                         .coordinatedFocus(ViewState.Focus.action(button.rawValue), selection: $focusedButton)
                 }
 
-                if menuActionButtons.isNotEmpty {
+                if menuActionButtons.isNotEmpty || showsSleepTimer {
                     Menu {
+                        if showsSleepTimer {
+                            SleepTimerMenu()
+
+                            if menuActionButtons.isNotEmpty {
+                                Divider()
+                            }
+                        }
+
                         ForEach(
                             menuActionButtons,
                             content: view(for:)

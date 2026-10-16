@@ -32,6 +32,9 @@ struct VideoPlayer: View {
     private var isDismissingForPictureInPicture = false
     @State
     private var safeAreaInsets: EdgeInsets = .init()
+    /// The sleep timer stopped playback: the page to open once the player dismisses
+    @State
+    private var sleepTimerExitRoute: NavigationRoute?
 
     #if os(iOS)
     @State
@@ -145,9 +148,18 @@ struct VideoPlayer: View {
             router.dismiss()
         }
         #endif
+        .onReceive(manager.sleepTimer.firedPublisher) { item in
+            // Decide before dismissing, while the screen behind the player is known
+            sleepTimerExitRoute = ExitNavigation.showPageRoute(for: item)
+        }
         .onReceive(manager.$state) { newState in
             if newState == .stopped, !isBeingDismissedByTransition {
                 router.dismiss()
+
+                if let sleepTimerExitRoute {
+                    self.sleepTimerExitRoute = nil
+                    ExitNavigation.openShowPage(sleepTimerExitRoute)
+                }
             }
         }
 

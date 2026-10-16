@@ -334,8 +334,10 @@ extension VideoPlayer {
             return min(availableHeight, max(dismissedSupplementContainerOffset, preferredHeight))
         }
 
+        /// tvOS: the controls end 126 pt above the bottom, which puts the scrubber at y 910 and the
+        /// tabs at y 1002 like the Apple TV app
         private var dismissedSupplementContainerOffset: CGFloat {
-            min(availableSupplementHeight, UIDevice.isTV ? 120 : 50.0 + EdgeInsets.edgePadding * 2)
+            min(availableSupplementHeight, UIDevice.isTV ? 126 : 50.0 + EdgeInsets.edgePadding * 2)
         }
 
         private let compactMinimumTranslation: CGFloat = 100.0

@@ -47,12 +47,20 @@ extension VideoPlayer.PlaybackControls {
 
         @ViewBuilder
         private var content: some View {
-            HStack(alignment: UIDevice.isTV ? .bottom : .center) {
+            #if os(tvOS)
+            // Apple TV app: the circular buttons line up with the big title, flush with the right margin
+            HStack(alignment: .playerTitle, spacing: 40) {
+                TitleView(item: manager.item)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                if !UIDevice.isTV {
-                    closeButton
-                        .modifier(OverlayBarButtonStyleModifier())
-                }
+                ActionButtons()
+                    .frame(height: Self.buttonSize)
+                    .alignmentGuide(.playerTitle) { $0[VerticalAlignment.center] }
+            }
+            #else
+            HStack(alignment: .center) {
+                closeButton
+                    .modifier(OverlayBarButtonStyleModifier())
 
                 TitleView(item: manager.item)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,6 +69,7 @@ extension VideoPlayer.PlaybackControls {
                     .frame(height: Self.buttonSize)
                     .padding(.horizontal)
             }
+            #endif
         }
 
         var body: some View {
@@ -89,7 +98,7 @@ extension VideoPlayer.PlaybackControls.Toolbar {
         private var _titleSubtitle: (title: String, subtitle: String?) {
             if item.type == .episode {
                 if let parentTitle = item.parentTitle {
-                    return (title: parentTitle, subtitle: item.seasonEpisodeLabel)
+                    return (title: parentTitle, subtitle: item.playerEpisodeLocator ?? item.seasonEpisodeLabel)
                 }
             }
 
@@ -119,28 +128,37 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                 }
         }
 
-        /// Episodes lead with the episode name, with "Show · S2:E1" above it, like the Apple TV app.
-        private var _tvTitleSubtitle: (title: String, subtitle: String?) {
-            guard item.type == .episode else { return _titleSubtitle }
-
-            let context = [item.parentTitle, item.seasonEpisodeLabel].compactMap(\.self).joined(separator: " · ")
-            return (title: item.displayTitle, subtitle: context.isEmpty ? nil : context)
-        }
-
         var tvOSView: some View {
-            VStack(alignment: .leading) {
-                if let subtitle = _tvTitleSubtitle.subtitle {
+            // Apple TV app: "S3, E11 • Episode Title" (about 27 pt) above the show title (about 57 pt bold).
+            // Movies show only their title.
+            let titles = item.playerTitles
+
+            VStack(alignment: .leading, spacing: 4) {
+                if let subtitle = titles.subtitle {
                     Text(subtitle)
-                        .font(.callout)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 27, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
 
-                Text(_tvTitleSubtitle.title)
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                Text(titles.title)
+                    .font(.system(size: 57, weight: .bold))
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.7)
+                    .alignmentGuide(.playerTitle) { $0[VerticalAlignment.center] }
             }
             .lineLimit(1)
         }
     }
+}
+
+extension VerticalAlignment {
+
+    private enum PlayerTitle: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[VerticalAlignment.center]
+        }
+    }
+
+    /// tvOS player: the center of the big title, which the bar's buttons line up with
+    static let playerTitle = VerticalAlignment(PlayerTitle.self)
 }

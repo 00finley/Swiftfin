@@ -39,8 +39,9 @@ extension VideoPlayer.PlaybackControls {
 
         private let previewImageHeight: CGFloat = 200
 
+        /// Apple TV app: a 12 pt rounded scrubber, a little taller while scrubbing
         private var sliderHeight: CGFloat {
-            isScrubbing ? 20 : 14
+            isScrubbing ? 18 : 12
         }
 
         private var isScrubbing: Bool {
@@ -168,7 +169,7 @@ extension VideoPlayer.PlaybackControls {
         }
 
         var body: some View {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 if manager.item.isLiveStream {
                     liveIndicator
                         .frame(maxWidth: .infinity, alignment: .leading)
