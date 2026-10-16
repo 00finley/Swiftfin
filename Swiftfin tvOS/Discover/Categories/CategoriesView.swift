@@ -71,26 +71,8 @@ struct CategoriesView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 30) {
-            Image(systemName: "magnifyingglass")
-                .font(.headline)
-                .foregroundStyle(.white.opacity(0.7))
-                .accessibilityHidden(true)
-
-            TextField(L10n.categoriesSearchPrompt, text: $search.text)
-                .autocorrectionDisabled()
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel(L10n.search)
-
-            if search.text.isNotEmpty {
-                Button {
-                    search.text = ""
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .buttonStyle(GlassChipButtonStyle(isCircle: true))
-                .accessibilityLabel(L10n.categoriesClearSearch)
-            }
+        HStack(spacing: 24) {
+            GlassSearchField(text: $search.text, prompt: L10n.categoriesSearchPrompt)
 
             Button {
                 router.route(to: .discoverSettings)
