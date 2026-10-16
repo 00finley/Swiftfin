@@ -137,7 +137,17 @@ struct MainTabView: View {
             }
             #if os(tvOS)
             .background(alignment: .top) {
-                FocusedPosterCinematicBackgroundView()
+                ZStack {
+                    // Near-black base like the Apple TV app, instead of the system slate grey
+                    LinearGradient(
+                        colors: [Color(white: 0.09), Color(red: 0.043, green: 0.043, blue: 0.059)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+
+                    FocusedPosterCinematicBackgroundView()
+                }
             }
             #endif
     }

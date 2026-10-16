@@ -71,6 +71,17 @@ struct CinematicSelectionContentGroup: ContentGroup {
             }
         }
 
+        /// "S2:E1 · Ooze · 20m" for episodes, "2025 · Animation · 1h 52m" otherwise.
+        private func heroSubtitle(for item: BaseItemDto) -> String? {
+            let parts: [String?] = if item.type == .episode {
+                [item.seasonEpisodeLabel, item.displayTitle, item.progressLabel ?? item.runTimeLabel]
+            } else {
+                [item.productionYear.map(String.init), item.genres?.first, item.runTimeLabel]
+            }
+            let joined = parts.compactMap(\.self).filter(\.isNotEmpty).joined(separator: " · ")
+            return joined.isEmpty ? nil : joined
+        }
+
         var body: some View {
             let items = viewModel.hasResumeItems ? viewModel.resumeViewModel.elements.elements : viewModel.recentlyAddedViewModel.elements
                 .elements
@@ -80,19 +91,37 @@ struct CinematicSelectionContentGroup: ContentGroup {
             ) { item in
                 router.route(to: .item(item: item.snapshot))
             } topContent: { item in
-                ImageView(itemSelectorImageSource(for: item.snapshot))
-                    .placeholder { _ in
-                        EmptyView()
-                    }
-                    .failure {
-                        Text(item.displayTitle)
-                            .font(.largeTitle)
+                VStack(alignment: .leading, spacing: 16) {
+                    ImageView(itemSelectorImageSource(for: item.snapshot))
+                        .placeholder { _ in
+                            EmptyView()
+                        }
+                        .failure {
+                            Text(item.displayTitle)
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                        }
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: CinematicSelectionLayout.logoMaxHeight, alignment: .bottomLeading)
+                        .frame(maxWidth: CinematicSelectionLayout.logoMaxWidth, alignment: .leading)
+
+                    if let subtitle = heroSubtitle(for: item.snapshot) {
+                        Text(subtitle)
+                            .font(.callout)
                             .fontWeight(.semibold)
+                            .foregroundStyle(.white.opacity(0.85))
                     }
-                    .edgePadding(.leading)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: CinematicSelectionLayout.logoMaxHeight, alignment: .bottomLeading)
-                    .frame(maxWidth: CinematicSelectionLayout.logoMaxWidth)
+
+                    if let overview = item.snapshot.overview, overview.isNotEmpty {
+                        Text(overview)
+                            .font(.callout)
+                            .lineLimit(2)
+                            .foregroundStyle(.white.opacity(0.62))
+                            .frame(maxWidth: CinematicSelectionLayout.overviewMaxWidth, alignment: .leading)
+                    }
+                }
+                .shadow(color: .black.opacity(0.35), radius: 12)
+                .edgePadding(.leading)
             }
             .preference(
                 key: ContentGroupCustomizationKey.self,
@@ -189,6 +218,7 @@ final class CinematicSelectionContentGroupViewModel: ViewModel, WithRefresh {
 
 private enum CinematicSelectionLayout {
 
-    static let logoMaxHeight: CGFloat = 100
-    static let logoMaxWidth: CGFloat = 450
+    static let logoMaxHeight: CGFloat = 170
+    static let logoMaxWidth: CGFloat = 620
+    static let overviewMaxWidth: CGFloat = 1000
 }
