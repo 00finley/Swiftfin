@@ -16,6 +16,8 @@ struct TopShelfClient {
 
         struct UserData: Decodable, Hashable {
             let PlayedPercentage: Double?
+            let PlaybackPositionTicks: Int?
+            let Played: Bool?
             let LastPlayedDate: String?
         }
 
@@ -26,6 +28,8 @@ struct TopShelfClient {
         let SeriesId: String?
         let ParentIndexNumber: Int?
         let IndexNumber: Int?
+        let RunTimeTicks: Int?
+        let DateCreated: String?
         let ImageTags: [String: String]?
         let BackdropImageTags: [String]?
         let ParentThumbItemId: String?
@@ -43,13 +47,46 @@ struct TopShelfClient {
         }
     }
 
+    // MARK: Item state
+
+    /// Watch progress for the Top Shelf's progress bar (0...1), when the item has been started.
+    static func progress(of item: Item) -> Double? {
+        if let percentage = item.UserData?.PlayedPercentage, percentage > 0, percentage < 100 {
+            return percentage / 100
+        }
+        if let position = item.UserData?.PlaybackPositionTicks, position > 0,
+           let runtime = item.RunTimeTicks, runtime > 0, position < runtime
+        {
+            return Double(position) / Double(runtime)
+        }
+        return nil
+    }
+
+    /// An episode added in the last `days` days that hasn't been started.
+    static func isNew(_ item: Item, days: Int = 7, now: Date = .now) -> Bool {
+        guard item.Type == "Episode", item.UserData?.Played != true,
+              (item.UserData?.PlaybackPositionTicks ?? 0) == 0,
+              let created = item.DateCreated.flatMap(parseDate)
+        else { return false }
+
+        return now.timeIntervalSince(created) <= Double(days) * 24 * 60 * 60
+    }
+
+    /// Jellyfin dates carry up to 7 fractional digits, which ISO8601DateFormatter rejects: parse the
+    /// seconds-precision prefix (they're UTC).
+    static func parseDate(_ string: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: String(string.prefix(19)) + "Z")
+    }
+
     private struct ItemsResponse: Decodable {
         let Items: [Item]
     }
 
     let session: TopShelfCredentials.Session
 
-    private static let fields = "EnableImageTypes=Primary,Thumb,Backdrop&ImageTypeLimit=1&Fields=ParentId"
+    private static let fields = "EnableImageTypes=Primary,Thumb,Backdrop&ImageTypeLimit=1&Fields=ParentId,DateCreated"
 
     func resumeItems(limit: Int) async throws -> [Item] {
         try await items(at: "UserItems/Resume?userId=\(session.userID)&MediaTypes=Video&Limit=\(limit)&\(Self.fields)")

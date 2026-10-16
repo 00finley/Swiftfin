@@ -314,10 +314,15 @@ extension BaseItemDto {
         return Duration.ticks(ticks)
     }
 
+    /// "S2, E8" on tvOS, the Apple TV app's episode locator (comma and space); "S2:E8" elsewhere.
     var seasonEpisodeLabel: String? {
         guard let seasonNo = parentIndexNumber, let episodeNo = indexNumber else { return nil }
 
+        #if os(tvOS)
+        return L10n.seasonEpisodeShort(String(seasonNo), String(episodeNo))
+        #else
         return L10n.seasonAndEpisode(String(seasonNo), String(episodeNo))
+        #endif
     }
 
     // MARK: Calculations

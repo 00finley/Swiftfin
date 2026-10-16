@@ -8,6 +8,7 @@
 
 import Combine
 import Foundation
+import JellyfinAPI
 import Observation
 import SwiftUI
 
@@ -91,6 +92,20 @@ extension VideoPlayer {
                 supplement.overlayActions.map {
                     OverlayAction(id: .init(supplementID: supplement.id, actionID: $0.id), button: $0)
                 }
+            }
+        }
+
+        /// "Watching intro" / "Watching credits" while the show's rule is to watch that segment.
+        var segmentWatchingNotice: MediaSegmentType? {
+            access(keyPath: \.overlayActions)
+
+            guard guestSupplement == nil, !isGestureLocked, !isScrubbing else { return nil }
+
+            switch presentation {
+            case .hidden, .progress:
+                return manager?.mediaSegmentObserver?.watchingNotice
+            case .controls, .supplement:
+                return nil
             }
         }
 

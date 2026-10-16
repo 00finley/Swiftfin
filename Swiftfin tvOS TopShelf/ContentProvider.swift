@@ -103,8 +103,9 @@ final class ContentProvider: TVTopShelfContentProvider {
             shelfItem.setImageURL(url, for: .screenScale2x)
         }
 
-        if let percentage = item.UserData?.PlayedPercentage, percentage > 0, percentage < 100 {
-            shelfItem.playbackProgress = percentage / 100
+        // The system draws a progress bar under started items
+        if let progress = TopShelfClient.progress(of: item) {
+            shelfItem.playbackProgress = progress
         }
 
         // Same format as DeepLink: <scheme>://<serverID>/<userID>/item/<itemID>
@@ -115,15 +116,23 @@ final class ContentProvider: TVTopShelfContentProvider {
         return shelfItem
     }
 
-    /// "Haunted Hotel · S2:E2" for episodes, the item name otherwise.
+    /// "Haunted Hotel · S2, E2" for episodes (the Apple TV app's locator), the item name otherwise.
+    /// Episodes added in the last 7 days that haven't been started lead with "New": sectioned Top
+    /// Shelf items have no badge, so the indicator is part of the title shown under the focused item.
     private func title(for item: TopShelfClient.Item) -> String {
-        if item.Type == "Episode", let series = item.SeriesName {
+        let base: String = if item.Type == "Episode", let series = item.SeriesName {
             if let season = item.ParentIndexNumber, let episode = item.IndexNumber {
-                return "\(series) · S\(season):E\(episode)"
+                "\(series) · S\(season), E\(episode)"
+            } else {
+                series
             }
-            return series
+        } else {
+            item.Name ?? ""
         }
-        return item.Name ?? ""
+
+        guard TopShelfClient.isNew(item) else { return base }
+
+        return String(format: NSLocalizedString("New · %@", comment: "Top Shelf title of an episode added in the last 7 days"), base)
     }
 }
 

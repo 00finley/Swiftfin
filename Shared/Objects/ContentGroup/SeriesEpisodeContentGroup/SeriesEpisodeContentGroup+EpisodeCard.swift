@@ -30,11 +30,25 @@ extension SeriesEpisodeContentGroup {
             }
         }
 
+        /// "May 24, 2023" under the description
+        private var dateLabel: String? {
+            guard !episode.isUnaired else { return nil }
+
+            return episode.premiereDate?.formatted(date: .abbreviated, time: .omitted)
+        }
+
+        /// "▶ 31m" on the image; in-progress episodes show their progress bar instead
+        private var showsRuntimeLabel: Bool {
+            (episode.userData?.playbackPositionTicks ?? 0) == 0 && episode.runtime != nil && !episode.isUnaired
+        }
+
         var body: some View {
             EpisodeCardLayout(
                 header: episode.displayTitle,
                 subHeader: episode.episodeLocator ?? .emptyDash,
                 content: episodeContent,
+                date: dateLabel,
+                rating: episode.officialRating,
                 artworkAction: {
                     guard let provider = episode.getPlaybackItemProvider(userSession: nil) else {
                         return
@@ -64,12 +78,48 @@ extension SeriesEpisodeContentGroup {
                         posterDisplayType: .landscape
                     )
                 }
+                #if os(tvOS)
+                .overlay(alignment: .bottomLeading) {
+                    if showsRuntimeLabel, let runtime = episode.runtime {
+                        EpisodeRuntimeLabel(runtime: runtime)
+                    }
+                }
+                #endif
                 .contentShape(.contextMenuPreview, Rectangle())
                 .subtleShadow()
                 .matchedTransitionSource(id: "item", in: namespace)
             }
         }
     }
+
+    #if os(tvOS)
+    /// "▶ 31m" at the bottom-left of the image, like the Apple TV app
+    private struct EpisodeRuntimeLabel: View {
+
+        let runtime: Duration
+
+        var body: some View {
+            Label {
+                Text(runtime.formatted(.units(allowed: [.hours, .minutes], width: .narrow)))
+            } icon: {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 18))
+            }
+            .font(.system(size: 23, weight: .semibold))
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.6), radius: 6)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .bottomLeading)
+            .background(alignment: .bottom) {
+                LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 80)
+                    .allowsHitTesting(false)
+            }
+            .accessibilityHidden(true)
+        }
+    }
+    #endif
 
     struct EpisodeStateCard: View {
 
@@ -128,6 +178,8 @@ extension SeriesEpisodeContentGroup {
         let header: String
         let subHeader: String
         let content: String
+        let date: String?
+        let rating: String?
         let artworkAction: () -> Void
         let contentAction: () -> Void
         @OptionalSharedBaseItem
@@ -136,13 +188,15 @@ extension SeriesEpisodeContentGroup {
 
         private var contentAccessibilityLabel: String {
             let title = contextMenuItem?.posterAccessibility(configuration: posterConfiguration).label
-            return PosterAccessibility.joined([title ?? header, contextMenuItem == nil ? subHeader : nil, content])
+            return PosterAccessibility.joined([title ?? header, contextMenuItem == nil ? subHeader : nil, content, date, rating])
         }
 
         init(
             header: String,
             subHeader: String,
             content: String,
+            date: String? = nil,
+            rating: String? = nil,
             artworkAction: @escaping () -> Void,
             contentAction: @escaping () -> Void,
             contextMenuItem: BaseItemDto? = nil,
@@ -151,6 +205,8 @@ extension SeriesEpisodeContentGroup {
             self.header = header
             self.subHeader = subHeader
             self.content = content
+            self.date = date
+            self.rating = rating
             self.artworkAction = artworkAction
             self.contentAction = contentAction
             self.contextMenuItem = contextMenuItem
@@ -218,7 +274,9 @@ extension SeriesEpisodeContentGroup {
                     EpisodeMetadataView(
                         header: header,
                         subHeader: subHeader,
-                        content: content
+                        content: content,
+                        date: date,
+                        rating: rating
                     )
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(contentAccessibilityLabel)
@@ -250,8 +308,57 @@ extension SeriesEpisodeContentGroup {
         let header: String
         let subHeader: String
         let content: String
+        var date: String?
+        var rating: String?
 
         var body: some View {
+            #if os(tvOS)
+            // The Apple TV app's episode lockup: "EPISODE 3" in small caps, the title, a 4-line
+            // description and the air date with the rating badge at the bottom
+            VStack(alignment: .leading, spacing: 0) {
+                Text(subHeader.uppercased())
+                    .font(.system(size: 23, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+
+                Text(header)
+                    .font(.system(size: 29, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .padding(.top, 2)
+
+                Text(content)
+                    .font(.system(size: 27))
+                    .lineSpacing(3)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(4, reservesSpace: false)
+                    .padding(.top, 4)
+
+                Spacer(minLength: 10)
+
+                if date != nil || rating != nil {
+                    HStack(spacing: 12) {
+                        if let date {
+                            Text(date)
+                                .font(.system(size: 27))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+
+                        if let rating, rating.isNotEmpty {
+                            TechBadge(title: rating)
+                        }
+                    }
+                    .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            #else
+            iOSBody
+            #endif
+        }
+
+        private var iOSBody: some View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(subHeader)
                     .font(.caption)
@@ -283,16 +390,19 @@ extension SeriesEpisodeContentGroup {
 
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
-                .padding(28)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 18)
                 .frame(
                     maxWidth: .infinity,
                     maxHeight: .infinity,
                     alignment: .topLeading
                 )
-                .frame(height: 200)
+                .frame(height: 300)
+                // The glass panel reaches slightly past the image's edges, under the enlarged artwork
+                .padding(.horizontal, -12)
                 .backport
                 .glassEffect(
-                    showsMaterial ? .regular : .identity,
+                    showsMaterial ? .regular.tint(.white.opacity(0.1)) : .identity,
                     in: .rect(
                         cornerRadius: cornerRadius,
                         style: .continuous

@@ -133,6 +133,109 @@ extension ItemView {
             }
 
             #if os(tvOS)
+            /// "TV Show · Animation · Comedy"
+            private var metadataLine: String {
+                let kind: String? = switch provider.item.type {
+                case .series: L10n.tvShow
+                case .movie: L10n.movie
+                default: nil
+                }
+                let genres = (provider.item.genres ?? []).filter(\.isNotEmpty).prefix(2)
+
+                return ([kind].compactMap(\.self) + genres).joined(separator: " · ")
+            }
+
+            /// The Apple TV app's show / movie hero: logo, metadata line, a 4-line summary, the tech
+            /// line and a row of buttons at the left; "Starring …" at the right, bottom-aligned with
+            /// the buttons.
+            @ViewBuilder
+            private var cinematicOverlay: some View {
+                HStack(alignment: .bottom, spacing: 60) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let parentID = provider.item.parentRootID, let parentTitle = provider.item.parentTitle {
+                            ParentButton(title: parentTitle, id: parentID)
+                                .padding(.bottom, 12)
+                        }
+
+                        cinematicLogo
+                            .padding(.bottom, 26)
+
+                        if metadataLine.isNotEmpty {
+                            Text(metadataLine)
+                                .font(.system(size: 29, weight: .medium))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .padding(.bottom, 16)
+                        }
+
+                        if let overview = provider.item.overview, overview.isNotEmpty {
+                            Text(overview)
+                                .font(.system(size: 26, weight: .medium))
+                                .lineSpacing(4)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .lineLimit(4)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: 760, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.bottom, 20)
+                        }
+
+                        ItemTechLine(
+                            item: provider.item,
+                            mediaSource: provider.mediaPlayerItemProvider?.mediaSource,
+                            attributes: attributes
+                        )
+                        .padding(.bottom, 34)
+
+                        ItemView.ActionBar(
+                            provider: provider,
+                            alignment: .leading,
+                            axis: .horizontal
+                        )
+                    }
+                    .frame(maxWidth: 1040, alignment: .leading)
+
+                    ItemCreditsColumn(item: provider.item)
+                        .frame(width: 410, alignment: .leading)
+                        // Center the last line with the buttons, like the Apple TV app
+                        .padding(.bottom, 8)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .shadow(color: .black.opacity(0.3), radius: 10)
+                .focusSection()
+            }
+
+            @ViewBuilder
+            private var cinematicLogo: some View {
+                ImageView(
+                    provider.item.imageSource(
+                        .logo,
+                        itemID: provider.item.id,
+                        environment: ImageSourceOptions(maxHeight: 150)
+                    )
+                )
+                .image { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 600, maxHeight: 150, alignment: .bottomLeading)
+                }
+                .placeholder { _ in
+                    EmptyView()
+                }
+                .failure {
+                    Text(provider.item.displayTitle)
+                        .font(.system(size: 76, weight: .bold))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: 1000, alignment: .leading)
+                }
+                .frame(maxWidth: 600, maxHeight: 150, alignment: .bottomLeading)
+                .accessibilityLabel(provider.item.displayTitle)
+                .accessibilityRemoveTraits(.isImage)
+            }
+
             /// Cinematic episode layout: title block, description and a single button row, bottom-leading.
             @ViewBuilder
             private var episodeOverlay: some View {
@@ -152,16 +255,8 @@ extension ItemView {
                                 Text(seasonEpisodeLabel)
                             }
 
-                            if let runtime = provider.item.runtime {
-                                Text(runtime, format: .hourMinuteAbbreviated)
-                            }
-
-                            if let premiereYear = provider.item.premiereDateYear {
-                                Text(premiereYear)
-                            }
-
-                            if let officialRating = provider.item.officialRating {
-                                Text(officialRating)
+                            if let premiereDate = provider.item.premiereDate {
+                                Text(premiereDate, format: .dateTime.month(.wide).day().year())
                             }
                         }
                         .font(.callout)
@@ -171,27 +266,25 @@ extension ItemView {
 
                     if let overview = provider.item.overview, overview.isNotEmpty {
                         Text(overview)
-                            .font(.callout)
+                            .font(.system(size: 26, weight: .medium))
+                            .lineSpacing(4)
+                            .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: 1000, alignment: .leading)
                     }
 
-                    HStack(alignment: .center, spacing: 40) {
-                        ItemView.ActionBar(
-                            provider: provider,
-                            alignment: .leading,
-                            axis: .horizontal
-                        )
+                    ItemTechLine(
+                        item: provider.item,
+                        mediaSource: provider.mediaPlayerItemProvider?.mediaSource,
+                        attributes: attributes
+                    )
 
-                        ItemView.AttributesHStack(
-                            attributes: attributes,
-                            item: provider.item,
-                            selectedMediaSource: provider.mediaPlayerItemProvider?.mediaSource,
-                            alignment: .leading
-                        )
-                        .foregroundStyle(.secondary)
-                    }
+                    ItemView.ActionBar(
+                        provider: provider,
+                        alignment: .leading,
+                        axis: .horizontal
+                    )
                     .padding(.top, 8)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -218,7 +311,7 @@ extension ItemView {
                         if provider.item.type == .episode {
                             episodeOverlay
                         } else {
-                            overlay
+                            cinematicOverlay
                         }
                     }
                     .edgePadding(.horizontal)

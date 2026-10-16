@@ -294,7 +294,8 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         AboutItemGroup(
             displayTitle: L10n.about,
             id: "about",
-            item: item
+            item: item,
+            mediaSource: mediaPlayerItemProvider?.mediaSource
         )
     }
 

@@ -256,6 +256,16 @@ extension NavigationRoute {
         }
     }
 
+    #if os(tvOS)
+    static var showExceptions: NavigationRoute {
+        NavigationRoute(
+            id: "showExceptions"
+        ) {
+            ShowExceptionsView()
+        }
+    }
+    #endif
+
     static var playbackQualitySettings: NavigationRoute {
         NavigationRoute(
             id: "playbackQualitySettings"

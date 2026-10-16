@@ -170,6 +170,12 @@ struct VideoPlayerSettingsView: View {
             ChevronButton(L10n.playbackQuality) {
                 router.route(to: .playbackQualitySettings)
             }
+
+            #if os(tvOS)
+            ChevronButton(L10n.showExceptions) {
+                router.route(to: .showExceptions)
+            }
+            #endif
         } learnMore: {
             LabeledContent(
                 L10n.vlc,

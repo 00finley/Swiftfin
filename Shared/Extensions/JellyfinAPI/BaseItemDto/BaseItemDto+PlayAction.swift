@@ -15,7 +15,7 @@ extension BaseItemDto {
         (userData?.playbackPositionTicks ?? 0) > 0
     }
 
-    /// "Resume S2:E1" or "Play S2:E1", like the Apple TV app. Unaired, ended and
+    /// "Resume S2, E1" or "Play S2, E1", like the Apple TV app. Unaired, ended and
     /// missing items keep their existing label.
     var playActionTitle: String {
         let fallback = playButtonLabel

@@ -306,7 +306,8 @@ final class SleepTimer: ObservableObject {
         }
     }
 
-    /// Media time left until the episode's credits (or its end, without a credits segment).
+    /// Media time left until the episode's credits (or its end, without a credits segment, or when
+    /// the show's rule is to watch the credits).
     private func remainingInEpisode() -> Duration? {
         guard let manager,
               manager.state == .playback,
@@ -314,7 +315,7 @@ final class SleepTimer: ObservableObject {
               let runtime = manager.item.runtime, runtime > .zero
         else { return nil }
 
-        let stopPoint = manager.mediaSegmentObserver?.creditsStart.map { min($0, runtime) } ?? runtime
+        let stopPoint = manager.mediaSegmentObserver?.sleepTimerStopPoint.map { min($0, runtime) } ?? runtime
         let rate = max(manager.rate, 0.25)
 
         return .seconds(max(0, (stopPoint - manager.seconds).seconds / rate))

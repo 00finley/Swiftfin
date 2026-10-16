@@ -24,6 +24,9 @@ extension ItemView {
         @ObservedObject
         var provider: ItemContentGroupProvider
 
+        @ObservedObject
+        private var colorStore = ArtworkColorStore.shared
+
         let groups: [any ContentGroup]
         let isEnhanced: Bool
 
@@ -57,12 +60,40 @@ extension ItemView {
             return Array((sources + parentSources).uniqued())
         }
 
+        /// The artwork-tinted wash behind the sections below the hero, like the Apple TV app's
+        /// episode screens: the blurred art under a gradient of its dominant color, darkened so
+        /// white text keeps its contrast (see `ArtworkColorStore`).
+        @ViewBuilder
+        private var colorWash: some View {
+            let base = Color(red: 0.07, green: 0.07, blue: 0.08)
+            let wash = colorStore.color(for: backgroundImageItem.id) ?? base
+
+            LinearGradient(
+                stops: [
+                    .init(color: wash.opacity(0.62), location: 0),
+                    .init(color: wash.opacity(0.72), location: 0.5),
+                    .init(color: base.opacity(0.9), location: 1),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .animation(.easeInOut(duration: 0.4), value: wash)
+        }
+
         @ViewBuilder
         private var background: some View {
             AlternateLayoutView {
                 Color.clear
             } content: {
                 ImageView(backgroundImageSources)
+                    .image { (image: UIImage) in
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .onAppear {
+                                colorStore.resolve(backgroundImageItem.id, from: image)
+                            }
+                    }
                     .failure {
                         Color.black
                     }
@@ -96,8 +127,41 @@ extension ItemView {
                         (location: 1, opacity: 1)
                     }
             }
+            #if os(tvOS)
+            .overlay {
+                colorWash
+                    .opacity(isHeaderFocused ? 0 : 1)
+            }
+            #endif
             .animation(.linear(duration: 0.2), value: isHeaderFocused)
         }
+
+        #if os(tvOS)
+        /// Like the Apple TV app, the episodes section takes the whole screen when focus moves into
+        /// it (the hero scrolls away), and moving back up brings the full hero back.
+        private func scrollToFocusedSection(from oldValue: Set<String>, to newValue: Set<String>, proxy: ScrollViewProxy) {
+            guard isEnhanced, let headerID = groups.first?.id else { return }
+
+            if newValue.contains(headerID), !oldValue.contains(headerID) {
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo(ContentGroupVStack.scrollAnchorID(for: headerID), anchor: .top)
+                }
+                return
+            }
+
+            guard let target = groups.dropFirst().first(where: { newValue.contains($0.id) && !oldValue.contains($0.id) }),
+                  target.id.hasSuffix("-episode-selector") || oldValue.contains(headerID)
+            else { return }
+
+            // After the focus engine's own scroll-into-view for the newly focused card
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(80))
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    proxy.scrollTo(ContentGroupVStack.scrollAnchorID(for: target.id), anchor: .top)
+                }
+            }
+        }
+        #endif
 
         var body: some View {
             ZStack {
@@ -108,10 +172,17 @@ extension ItemView {
                 }
                 #endif
 
-                ScrollView {
-                    ContentGroupVStack(groups: groups)
-                        .edgePadding(.bottom)
-                        .padding(.top, isEnhanced ? 0 : tabSafeAreaInsets.top)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        ContentGroupVStack(groups: groups)
+                            .edgePadding(.bottom)
+                            .padding(.top, isEnhanced ? 0 : tabSafeAreaInsets.top)
+                    }
+                    #if os(tvOS)
+                    .onChange(of: focusCoordinator.focusedIDs) { oldValue, newValue in
+                            scrollToFocusedSection(from: oldValue, to: newValue, proxy: proxy)
+                        }
+                    #endif
                 }
                 .trackingFrame(for: .scrollView)
                 #if os(tvOS)
