@@ -48,6 +48,7 @@ struct DiscoverView: View {
             }
         }
         .onAppear {
+            SeerrStatusStore.installRequestHandler()
             viewModel.refreshIfNeeded()
         }
     }
@@ -196,6 +197,16 @@ struct DiscoverCard: View {
     var viewModel: DiscoverViewModel
     let action: () -> Void
 
+    @ObservedObject
+    private var seerr = SeerrStatusStore.shared
+
+    /// "Requested" / "Available" etc. from Seerr, for titles not already in the library.
+    private var requestBadge: SeerrStatus? {
+        guard !item.isInLibrary, let status = seerr.status(for: item.title), status != .notRequested else { return nil }
+
+        return status
+    }
+
     static let width: CGFloat = 400
 
     /// The reason when there is one (it's the useful part), otherwise the year.
@@ -222,6 +233,15 @@ struct DiscoverCard: View {
 
                     if item.isInLibrary {
                         Label(L10n.discoverInLibrary, systemImage: "checkmark")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.ultraThinMaterial, in: .capsule)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    } else if let requestBadge, let title = requestBadge.badgeTitle {
+                        Label(title, systemImage: requestBadge.systemImage)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 12)
@@ -260,6 +280,11 @@ struct DiscoverCard: View {
             }
         }
         .frame(width: Self.width, alignment: .leading)
+        .onAppear {
+            if !item.isInLibrary {
+                seerr.prefetch(item.title)
+            }
+        }
     }
 }
 

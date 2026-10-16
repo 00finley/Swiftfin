@@ -157,5 +157,14 @@ extension Defaults.Keys {
         static var profile: Key<DiscoverProfile> {
             Key("discoverProfile", default: .init(), suite: .currentUserSuite)
         }
+
+        /// Overrides for the build-time `SEERR_URL` / `SEERR_API_KEY`; empty means use the build values.
+        static var seerrURL: Key<String> {
+            Key("discoverSeerrURL", default: "", suite: .currentUserSuite)
+        }
+
+        static var seerrAPIKey: Key<String> {
+            Key("discoverSeerrAPIKey", default: "", suite: .currentUserSuite)
+        }
     }
 }

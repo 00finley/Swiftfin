@@ -16,8 +16,34 @@ struct DiscoverSettingsView: View {
     @Default(.Discover.region)
     private var region
 
+    @Default(.Discover.seerrURL)
+    private var seerrURL
+    @Default(.Discover.seerrAPIKey)
+    private var seerrAPIKey
+
     @State
     private var didReset = false
+    @State
+    private var connection: ConnectionState = .idle
+
+    private enum ConnectionState: Equatable {
+        case idle
+        case testing
+        case connected
+        case failed(String)
+    }
+
+    private func testConnection() {
+        connection = .testing
+        Task {
+            do {
+                try await SeerrClient.shared.ping()
+                connection = .connected
+            } catch {
+                connection = .failed(error.localizedDescription)
+            }
+        }
+    }
 
     private let regions = ["US", "CA", "GB", "AU", "IE", "NZ"]
 
@@ -45,6 +71,51 @@ struct DiscoverSettingsView: View {
                             .tag(code)
                     }
                 }
+            }
+
+            Section {
+                TextField(L10n.seerrServerURL, text: $seerrURL)
+                    .textContentType(.URL)
+                    .autocorrectionDisabled()
+                SecureField(L10n.seerrAPIKey, text: $seerrAPIKey)
+
+                Button(action: testConnection) {
+                    HStack {
+                        Text(L10n.seerrTestConnection)
+                        Spacer()
+                        switch connection {
+                        case .idle:
+                            EmptyView()
+
+                        case .testing:
+                            ProgressView()
+
+                        case .connected:
+                            Label(L10n.seerrConnected, systemImage: "checkmark")
+                                .foregroundStyle(.secondary)
+
+                        case let .failed(message):
+                            Text(message)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .disabled(!SeerrClient.isConfigured || connection == .testing)
+            } header: {
+                Text(L10n.seerrRequests)
+            } footer: {
+                Text(L10n.seerrRequestsDescription)
+            }
+            .onChange(of: seerrURL) {
+                connection = .idle
+                SeerrStatusStore.shared.reset()
+                SeerrStatusStore.installRequestHandler()
+            }
+            .onChange(of: seerrAPIKey) {
+                connection = .idle
+                SeerrStatusStore.shared.reset()
+                SeerrStatusStore.installRequestHandler()
             }
 
             Section {

@@ -1680,6 +1680,38 @@ internal enum L10n {
   internal static let seek = L10n.tr("Localizable", "seek", fallback: "Seek")
   /// See more
   internal static let seeMore = L10n.tr("Localizable", "seeMore", fallback: "See more")
+  /// API Key
+  internal static let seerrAPIKey = L10n.tr("Localizable", "seerrAPIKey", fallback: "API Key")
+  /// Available
+  internal static let seerrAvailable = L10n.tr("Localizable", "seerrAvailable", fallback: "Available")
+  /// Connected
+  internal static let seerrConnected = L10n.tr("Localizable", "seerrConnected", fallback: "Connected")
+  /// Downloading
+  internal static let seerrDownloading = L10n.tr("Localizable", "seerrDownloading", fallback: "Downloading")
+  /// That title was already requested.
+  internal static let seerrErrorAlreadyRequested = L10n.tr("Localizable", "seerrErrorAlreadyRequested", fallback: "That title was already requested.")
+  /// The request didn't go through. Try again in a bit.
+  internal static let seerrErrorGeneric = L10n.tr("Localizable", "seerrErrorGeneric", fallback: "The request didn\'t go through. Try again in a bit.")
+  /// Your request server didn't accept the API key.
+  internal static let seerrErrorUnauthorized = L10n.tr("Localizable", "seerrErrorUnauthorized", fallback: "Your request server didn\'t accept the API key.")
+  /// Couldn't reach your request server. Check that Seerr is running.
+  internal static let seerrErrorUnreachable = L10n.tr("Localizable", "seerrErrorUnreachable", fallback: "Couldn\'t reach your request server. Check that Seerr is running.")
+  /// Partially Available
+  internal static let seerrPartiallyAvailable = L10n.tr("Localizable", "seerrPartiallyAvailable", fallback: "Partially Available")
+  /// Request
+  internal static let seerrRequest = L10n.tr("Localizable", "seerrRequest", fallback: "Request")
+  /// Requested
+  internal static let seerrRequested = L10n.tr("Localizable", "seerrRequested", fallback: "Requested")
+  /// Requested — it'll appear in your library when it's ready
+  internal static let seerrRequestedToast = L10n.tr("Localizable", "seerrRequestedToast", fallback: "Requested — it\'ll appear in your library when it\'s ready")
+  /// Requests
+  internal static let seerrRequests = L10n.tr("Localizable", "seerrRequests", fallback: "Requests")
+  /// Connect Seerr to request titles from Discover. Leave these blank to use the settings built into this copy of Glassfin.
+  internal static let seerrRequestsDescription = L10n.tr("Localizable", "seerrRequestsDescription", fallback: "Connect Seerr to request titles from Discover. Leave these blank to use the settings built into this copy of Glassfin.")
+  /// Server URL
+  internal static let seerrServerURL = L10n.tr("Localizable", "seerrServerURL", fallback: "Server URL")
+  /// Test Connection
+  internal static let seerrTestConnection = L10n.tr("Localizable", "seerrTestConnection", fallback: "Test Connection")
   /// Select all
   internal static let selectAll = L10n.tr("Localizable", "selectAll", fallback: "Select all")
   /// Select image

@@ -46,6 +46,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>SeerrAPIKey</key>
+	<string>$(SEERR_API_KEY)</string>
+	<key>SeerrURL</key>
+	<string>$(SEERR_URL)</string>
 	<key>SwiftfinSharedKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)org.jellyfin.swiftfin.shared</string>
 	<key>TMDBReadAccessToken</key>

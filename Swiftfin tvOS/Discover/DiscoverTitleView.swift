@@ -16,6 +16,13 @@ struct DiscoverTitleView: View {
     private var viewModel: DiscoverTitleViewModel
     @ObservedObject
     var feed: DiscoverViewModel
+    @ObservedObject
+    private var seerr = SeerrStatusStore.shared
+
+    @State
+    private var isRequesting = false
+    @State
+    private var toast: Toast?
 
     @Router
     private var router
@@ -30,6 +37,53 @@ struct DiscoverTitleView: View {
 
     private var item: DiscoverItem {
         viewModel.item
+    }
+
+    private struct Toast: Equatable {
+        let message: String
+        let isError: Bool
+    }
+
+    /// Seerr status for titles that aren't already in the library (nil when Seerr isn't set up).
+    private var requestStatus: SeerrStatus? {
+        guard viewModel.libraryItemID == nil, SeerrClient.isConfigured, DiscoverRequests.handler != nil else { return nil }
+
+        return seerr.status(for: item.title) ?? .notRequested
+    }
+
+    /// The white primary button: Open in Library, then Request, otherwise More Like This.
+    private var hasPrimaryAction: Bool {
+        viewModel.libraryItemID != nil || requestStatus == .notRequested
+    }
+
+    private func request() {
+        guard let handler = DiscoverRequests.handler, !isRequesting else { return }
+
+        isRequesting = true
+
+        Task {
+            do {
+                try await handler(item.title)
+                show(Toast(message: L10n.seerrRequestedToast, isError: false))
+            } catch {
+                show(Toast(message: error.localizedDescription, isError: true))
+            }
+            isRequesting = false
+        }
+    }
+
+    private func show(_ newToast: Toast) {
+        withAnimation(.easeOut(duration: 0.25)) {
+            toast = newToast
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(4))
+            if toast == newToast {
+                withAnimation(.easeIn(duration: 0.25)) {
+                    toast = nil
+                }
+            }
+        }
     }
 
     private var infoLine: String {
@@ -92,8 +146,26 @@ struct DiscoverTitleView: View {
         .background {
             DiscoverBackground(item: item, isHeroVisible: true)
         }
+        .overlay(alignment: .top) {
+            if let toast {
+                Label(toast.message, systemImage: toast.isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 18)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityAddTraits(.isStaticText)
+            }
+        }
         .task {
             await viewModel.load()
+        }
+        .task(id: viewModel.libraryItemID) {
+            guard viewModel.libraryItemID == nil, SeerrClient.isConfigured else { return }
+
+            _ = try? await seerr.refresh(item.title)
         }
     }
 
@@ -133,15 +205,37 @@ struct DiscoverTitleView: View {
                     .tint(.white)
                 }
 
+                if let requestStatus {
+                    if requestStatus == .notRequested {
+                        Button(action: request) {
+                            Label(L10n.seerrRequest, systemImage: isRequesting ? "ellipsis" : "plus")
+                                .fontWeight(.semibold)
+                                .padding(.horizontal, 24)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .tint(.white)
+                        .disabled(isRequesting)
+                    } else if let title = requestStatus.badgeTitle {
+                        // Status only; not focusable
+                        Label(title, systemImage: requestStatus.systemImage)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 16)
+                            .glassEffect(.regular, in: .capsule)
+                            .accessibilityAddTraits(.isStaticText)
+                    }
+                }
+
                 Button {
                     feed.moreLikeThis(item.title)
                 } label: {
                     Label(L10n.discoverMoreLikeThis, systemImage: feed.isLiked(item.title) ? "hand.thumbsup.fill" : "hand.thumbsup")
-                        .fontWeight(viewModel.libraryItemID == nil ? .semibold : .regular)
-                        .padding(.horizontal, viewModel.libraryItemID == nil ? 24 : 0)
+                        .fontWeight(hasPrimaryAction ? .regular : .semibold)
+                        .padding(.horizontal, hasPrimaryAction ? 0 : 24)
                 }
-                .if(viewModel.libraryItemID == nil) { $0.buttonStyle(.glassProminent).tint(.white) }
-                .if(viewModel.libraryItemID != nil) { $0.buttonStyle(.glass) }
+                .if(!hasPrimaryAction) { $0.buttonStyle(.glassProminent).tint(.white) }
+                .if(hasPrimaryAction) { $0.buttonStyle(.glass) }
 
                 Button {
                     feed.notInterested(item.title)
