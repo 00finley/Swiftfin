@@ -216,6 +216,8 @@ final class ChannelMediaPlayerQueue: ViewModel, MediaPlayerQueue {
         if !isInitial, !isInPiP {
             upNext = episode
             card = .transition(deadline: deadline)
+            // The old episode's skip / next episode button would stay up, frozen, over the card
+            manager?.mediaSegmentObserver?.dismissActiveSegment()
         }
         do {
             return try await build(episode, waitingUntil: deadline, modifyItem: modifyItem)
@@ -467,6 +469,10 @@ final class ChannelMediaPlayerQueue: ViewModel, MediaPlayerQueue {
             if card == .hidden {
                 card = .preroll(deadline: .now.addingTimeInterval(left))
                 hideInfo()
+                // The card takes over from the credits' "Next Episode" button for the last seconds
+                if manager.mediaSegmentObserver?.activeSegment?.type == .outro {
+                    manager.mediaSegmentObserver?.dismissActiveSegment()
+                }
             }
         } else if case .preroll = card {
             card = .hidden
