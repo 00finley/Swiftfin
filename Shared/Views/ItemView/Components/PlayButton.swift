@@ -29,29 +29,12 @@ struct PlayButton: View {
     }
 
     #if os(tvOS)
-    /// tvOS-style label, e.g. "Resume S2:E1" or "Play S2:E1", like the Apple TV app.
     private var title: String {
-        guard let item = provider.mediaPlayerItemProvider?.item else { return L10n.play }
-
-        let fallback = item.playButtonLabel
-        guard [L10n.unaired, L10n.ended, L10n.missing].contains(fallback) == false else { return fallback }
-
-        let isResuming = (item.userData?.playbackPositionTicks ?? 0) > 0
-        let verb = isResuming ? L10n.resume : L10n.play
-
-        if item.type == .episode, let locator = item.seasonEpisodeLabel {
-            return "\(verb) \(locator)"
-        }
-        return verb
+        provider.mediaPlayerItemProvider?.item.playActionTitle ?? L10n.play
     }
 
-    /// Time remaining when resuming, shown under the title.
     private var subtitle: String? {
-        guard let item = provider.mediaPlayerItemProvider?.item,
-              (item.userData?.playbackPositionTicks ?? 0) > 0
-        else { return nil }
-
-        return item.progressLabel
+        provider.mediaPlayerItemProvider?.item.playActionSubtitle
     }
     #else
     private var title: String {

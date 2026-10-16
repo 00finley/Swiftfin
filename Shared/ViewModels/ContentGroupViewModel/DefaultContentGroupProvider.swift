@@ -47,23 +47,20 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
 
         #if os(tvOS)
         let cinematicSelectionContentGroup = CinematicSelectionContentGroup(
-            resumeLibrary: ResumeItemsLibrary(mediaTypes: [.video]),
+            upNextLibrary: UpNextLibrary(),
             recentlyAddedLibrary: RecentlyAddedLibrary()
         )
 
         cinematicSelectionContentGroup
         #else
+        // Continue Watching and Next Up, one episode per series
         PosterGroup(
-            library: ResumeItemsLibrary(mediaTypes: [.video]),
+            library: UpNextLibrary(),
             posterDisplayType: .landscape,
             posterSize: .medium,
             _viewContext: .isInResume
         )
         #endif
-
-        PosterGroup(
-            library: NextUpLibrary()
-        )
 
         if Defaults[.Customization.Home.showRecentlyAdded] {
             #if os(tvOS)
