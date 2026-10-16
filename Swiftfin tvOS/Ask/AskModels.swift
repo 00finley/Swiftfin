@@ -190,8 +190,20 @@ enum AskGlassfin {
         Defaults[.Discover.askRemaining] = .today(max(0, count))
     }
 
-    /// The helper's health with the token; nil when it can't be reached.
+    /// The helper's health with the token. The first check after a while also asks Claude Code for its
+    /// account, which can take several seconds, so this waits longer than a plain liveness check.
+    static func healthResult() async -> Result<HelperHealth, GlassfinHelperError> {
+        do {
+            return try await .success(GlassfinHelperClient.shared.get("health", timeout: 12, as: HelperHealth.self))
+        } catch let error as GlassfinHelperError {
+            return .failure(error)
+        } catch {
+            return .failure(.invalidResponse)
+        }
+    }
+
+    /// The helper's health, or nil when it couldn't be read for any reason.
     static func health() async -> HelperHealth? {
-        try? await GlassfinHelperClient.shared.get("health", timeout: 5, as: HelperHealth.self)
+        try? await healthResult().get()
     }
 }

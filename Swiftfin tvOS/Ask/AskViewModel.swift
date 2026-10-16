@@ -123,13 +123,28 @@ final class AskViewModel: ObservableObject {
         guard phase == .idle else { return }
 
         Task { [weak self] in
-            let health = await AskGlassfin.health()
+            let result = await AskGlassfin.healthResult()
             guard let self, self.phase == .idle else { return }
 
-            if health == nil {
+            switch result {
+            case let .success(health):
+                if health.askEnabled == false {
+                    self.phase = .disabled(message: nil)
+                }
+
+            case .failure(.unreachable), .failure(.notConfigured):
+                // Nothing answered at all: the Mac is asleep or off the network
                 self.phase = .offline
-            } else if health?.askEnabled == false {
-                self.phase = .disabled(message: nil)
+
+            case .failure(.unauthorized):
+                self.phase = .failed(message: L10n.askGlassfinUnauthorized)
+
+            case let .failure(.server(403, _, message, _)):
+                self.phase = .notOnHomeNetwork(message: message)
+
+            case .failure:
+                // Slow or odd health answers aren't "offline"; asking reports what's really wrong
+                break
             }
         }
     }
