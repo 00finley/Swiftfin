@@ -20,6 +20,12 @@ struct SearchView: View {
     #if os(tvOS)
     @FocusState
     private var focusedFilter: FilterTrack.FocusTarget?
+
+    /// TMDB titles to request, below the library results (Settings → Discover)
+    @StateObject
+    private var requestable = SearchDiscoverViewModel()
+    @StateObject
+    private var discoverFeed = DiscoverViewModel.shared
     #endif
 
     @State
@@ -103,7 +109,13 @@ struct SearchView: View {
                     case .initial:
                         if viewModel.canSearch {
                             if viewModel.isEmpty {
+                                #if os(tvOS)
+                                if !requestable.hasItems(libraryItemIDs: discoverFeed.libraryItemIDs) {
+                                    Text(L10n.noResults)
+                                }
+                                #else
                                 Text(L10n.noResults)
+                                #endif
                             } else {
                                 ContentGroupVStack(
                                     groups: viewModel.itemContentGroupViewModel.groups
@@ -119,6 +131,12 @@ struct SearchView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .focusSection()
+
+                #if os(tvOS)
+                if viewModel.canSearch, viewModel.state != .searching {
+                    SearchDiscoverSection(viewModel: requestable, feed: discoverFeed)
+                }
+                #endif
             }
         }
         .ignoresSafeArea(edges: .horizontal)
@@ -138,6 +156,9 @@ struct SearchView: View {
         }
         .onChange(of: searchQuery) {
             viewModel.search(query: searchQuery)
+            #if os(tvOS)
+            requestable.search(searchQuery)
+            #endif
         }
         .searchable(
             text: $searchQuery,

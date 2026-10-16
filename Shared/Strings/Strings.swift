@@ -1716,8 +1716,20 @@ internal enum L10n {
   internal static let scrub = L10n.tr("Localizable", "scrub", fallback: "Scrub")
   /// Search
   internal static let search = L10n.tr("Localizable", "search", fallback: "Search")
+  /// Available to Request
+  internal static let searchAvailableToRequest = L10n.tr("Localizable", "searchAvailableToRequest", fallback: "Available to Request")
   /// Search for missing metadata
   internal static let searchForMissingMetadata = L10n.tr("Localizable", "searchForMissingMetadata", fallback: "Search for missing metadata")
+  /// Include titles you can request
+  internal static let searchIncludeRequestable = L10n.tr("Localizable", "searchIncludeRequestable", fallback: "Include titles you can request")
+  /// Search also shows movies and shows from TMDB that aren't in your library, after your library results.
+  internal static let searchIncludeRequestableDescription = L10n.tr("Localizable", "searchIncludeRequestableDescription", fallback: "Search also shows movies and shows from TMDB that aren\'t in your library, after your library results.")
+  /// More to Watch
+  internal static let searchMoreToWatch = L10n.tr("Localizable", "searchMoreToWatch", fallback: "More to Watch")
+  /// More with %@
+  internal static func searchMoreWith(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "searchMoreWith", String(describing: p1), fallback: "More with %@")
+  }
   /// Season
   internal static let season = L10n.tr("Localizable", "season", fallback: "Season")
   /// S%1$@:E%2$@

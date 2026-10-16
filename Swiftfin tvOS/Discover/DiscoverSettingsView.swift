@@ -17,6 +17,8 @@ struct DiscoverSettingsView: View {
     private var region
     @Default(.Discover.showOnHome)
     private var showOnHome
+    @Default(.Discover.searchIncludesRequestable)
+    private var searchIncludesRequestable
 
     @Default(.Discover.seerrURL)
     private var seerrURL
@@ -57,6 +59,14 @@ struct DiscoverSettingsView: View {
                 Text(L10n.home)
             } footer: {
                 Text(L10n.discoverShowOnHomeDescription)
+            }
+
+            Section {
+                Toggle(L10n.searchIncludeRequestable, isOn: $searchIncludesRequestable)
+            } header: {
+                Text(L10n.search)
+            } footer: {
+                Text(L10n.searchIncludeRequestableDescription)
             }
 
             Section(L10n.discoverStreamingServices) {
