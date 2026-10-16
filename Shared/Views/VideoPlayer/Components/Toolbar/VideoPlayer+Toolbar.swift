@@ -118,15 +118,24 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                 }
         }
 
+        /// Episodes lead with the episode name, with "Show · S2:E1" above it, like the Apple TV app.
+        private var _tvTitleSubtitle: (title: String, subtitle: String?) {
+            guard item.type == .episode else { return _titleSubtitle }
+
+            let context = [item.parentTitle, item.seasonEpisodeLabel].compactMap(\.self).joined(separator: " · ")
+            return (title: item.displayTitle, subtitle: context.isEmpty ? nil : context)
+        }
+
         var tvOSView: some View {
             VStack(alignment: .leading) {
-                if let subtitle = _titleSubtitle.subtitle {
+                if let subtitle = _tvTitleSubtitle.subtitle {
                     Text(subtitle)
                         .font(.callout)
                         .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
                 }
 
-                Text(_titleSubtitle.title)
+                Text(_tvTitleSubtitle.title)
                     .font(.title2)
                     .fontWeight(.semibold)
             }

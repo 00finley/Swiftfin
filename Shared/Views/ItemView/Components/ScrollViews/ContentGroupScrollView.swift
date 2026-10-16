@@ -71,7 +71,7 @@ extension ItemView {
             .accessibilityHidden(true)
             .overlay {
                 // Episode stills are often bright and busy: darken behind the bottom-leading text block
-                if backgroundImageItem.type == .episode {
+                if [.episode, .series, .season, .movie].contains(backgroundImageItem.type) {
                     LinearGradient(
                         stops: [
                             .init(color: .black.opacity(0.7), location: 0),

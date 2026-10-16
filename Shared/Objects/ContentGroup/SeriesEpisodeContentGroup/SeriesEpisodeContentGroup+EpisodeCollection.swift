@@ -132,6 +132,9 @@ extension SeriesEpisodeContentGroup {
         @FocusState
         private var focusedElement: EpisodeElement.ID?
 
+        @StateObject
+        private var proxy = CollectionHStackProxy()
+
         let elements: [EpisodeElement]
         let preferredElementID: EpisodeElement.ID?
         let header: Header
@@ -185,6 +188,7 @@ extension SeriesEpisodeContentGroup {
                         #endif
                 }
                 .initialElement(id: preferredElementID)
+                .proxy(proxy)
                 .clipsToBounds(false)
                 .insets(horizontal: EdgeInsets.edgePadding)
                 .itemSpacing(EdgeInsets.itemSpacing)
@@ -196,6 +200,17 @@ extension SeriesEpisodeContentGroup {
                     preferredElementID,
                     priority: .userInitiated
                 )
+                // The initial element applies to the loading placeholders, so scroll again once episodes arrive
+                // Runs on appear and whenever the preferred episode changes; the collection applies
+                // elements asynchronously, so retry briefly until the episode exists
+                .task(id: preferredElementID) {
+                    guard let preferredElementID else { return }
+
+                    for delay in [0, 150, 400, 800] {
+                        try? await Task.sleep(for: .milliseconds(delay))
+                        proxy.scrollTo(id: preferredElementID, animated: false)
+                    }
+                }
             } header: {
                 header
                     .focusSection()

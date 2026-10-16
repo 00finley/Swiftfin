@@ -57,6 +57,26 @@ struct CustomizeSettingsView: View {
             }
 
             HomeSection()
+
+            #if os(tvOS)
+            Section {
+                if ExperimentalSettingsView.isEnabled {
+                    ChevronButton(L10n.experimental) {
+                        router.route(to: .experimentalSettings)
+                    }
+                }
+
+                ChevronButton(L10n.logs) {
+                    router.route(to: .log)
+                }
+
+                #if DEBUG
+                ChevronButton("Debug") {
+                    router.route(to: .debugSettings)
+                }
+                #endif
+            }
+            #endif
         }
         .navigationTitle(L10n.advanced)
     }
