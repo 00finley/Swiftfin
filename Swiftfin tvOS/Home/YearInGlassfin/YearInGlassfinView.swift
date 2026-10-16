@@ -18,10 +18,11 @@ enum YearInGlassfin {
         return parts.month == 1 ? year - 1 : year
     }
 
-    /// December (and January, for last year's recap): featured near the top of Home.
+    /// The recap is a year-end reveal: it only appears (near the top of Home, and in Settings) from
+    /// December 1 through January 15, when January shows last year's recap.
     static func isFeatured(at date: Date = GlassfinDate.now, calendar: Calendar = .current) -> Bool {
-        let month = calendar.component(.month, from: date)
-        return month == 12 || month == 1
+        let parts = calendar.dateComponents([.month, .day], from: date)
+        return parts.month == 12 || (parts.month == 1 && (parts.day ?? 1) <= 15)
     }
 }
 

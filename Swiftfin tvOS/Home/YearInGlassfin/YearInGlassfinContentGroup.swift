@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// The Home banner that opens Your Year in Glassfin: at the bottom of Home all year, and larger
-/// near the top in December and January.
+/// The Home banner that opens Your Year in Glassfin, near the top of Home from December 1 through
+/// January 15 (see YearInGlassfin.isFeatured).
 struct YearInGlassfinContentGroup: ContentGroup {
 
     let id = "home-year-in-glassfin"

@@ -136,8 +136,10 @@ struct SettingsView: View {
                 }
             }
 
-            ChevronButton(L10n.yearInGlassfin) {
-                router.route(to: .yearInGlassfin)
+            if YearInGlassfin.isFeatured() {
+                ChevronButton(L10n.yearInGlassfin) {
+                    router.route(to: .yearInGlassfin)
+                }
             }
             #endif
 

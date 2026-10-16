@@ -134,9 +134,6 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
             DiscoverHomeContentGroup()
         }
 
-        if !YearInGlassfin.isFeatured() {
-            YearInGlassfinContentGroup(isFeatured: false)
-        }
         #endif
     }
 }
