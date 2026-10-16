@@ -279,6 +279,31 @@ extension Defaults.Keys {
             UserKey("jumpForwardLength", default: .fifteen)
         }
 
+        /// What to do when playback enters each kind of media segment (intro, credits, ...).
+        enum MediaSegments {
+
+            static var intro: Key<MediaSegmentBehavior> {
+                UserKey("mediaSegmentIntroBehavior", default: .showButton)
+            }
+
+            static var recap: Key<MediaSegmentBehavior> {
+                UserKey("mediaSegmentRecapBehavior", default: .showButton)
+            }
+
+            static var preview: Key<MediaSegmentBehavior> {
+                UserKey("mediaSegmentPreviewBehavior", default: .showButton)
+            }
+
+            static var commercial: Key<MediaSegmentBehavior> {
+                UserKey("mediaSegmentCommercialBehavior", default: .showButton)
+            }
+
+            /// With a next episode and auto play, `showButton` counts down to the next episode.
+            static var outro: Key<MediaSegmentBehavior> {
+                UserKey("mediaSegmentOutroBehavior", default: .showButton)
+            }
+        }
+
         static var menuActionButtons: Key<[VideoPlayerActionButton]> {
             UserKey(
                 "menuActionButtons",

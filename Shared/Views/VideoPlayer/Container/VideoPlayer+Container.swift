@@ -1039,6 +1039,8 @@ extension VideoPlayer {
                 viewState.selectedSupplementID = nil
             } else if viewState.presentation != .hidden {
                 viewState.hideControls()
+            } else if viewState.dismissMediaSegmentAction() {
+                // Back dismisses skip / next episode and lets the segment play
             } else if Defaults[.confirmClose] {
                 viewState.isPresentingCloseConfirmation = true
             } else {

@@ -138,6 +138,10 @@ class MediaPlayerItem: ViewModel, MediaPlayerObserver {
             ?? -1
 
         observers.append(MediaProgressObserver(item: self))
+
+        if !baseItem.isLiveStream {
+            observers.append(MediaSegmentObserver(item: self))
+        }
     }
 
     /// Decides whether a track change can be performed by the player in place, or whether the server must produce a new stream.

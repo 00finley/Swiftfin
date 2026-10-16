@@ -77,11 +77,27 @@ extension VideoPlayer {
 
         var overlayActions: [OverlayAction] {
             access(keyPath: \.overlayActions)
-            return supplements.flatMap { supplement in
+
+            // Skip intro / next episode actions come first, but not while a guest supplement owns the overlay
+            let segmentActions = guestSupplement == nil ? manager?.mediaSegmentObserver?.overlayActions ?? [] : []
+
+            return segmentActions.map {
+                OverlayAction(id: .init(supplementID: MediaSegmentObserver.overlayActionSourceID, actionID: $0.id), button: $0)
+            } + supplements.flatMap { supplement in
                 supplement.overlayActions.map {
                     OverlayAction(id: .init(supplementID: supplement.id, actionID: $0.id), button: $0)
                 }
             }
+        }
+
+        /// Dismisses a visible skip / next episode action, letting the segment play.
+        ///
+        /// - Returns: Whether an action was dismissed.
+        func dismissMediaSegmentAction() -> Bool {
+            guard let observer = manager?.mediaSegmentObserver, observer.activeSegment != nil else { return false }
+
+            observer.dismissActiveSegment()
+            return true
         }
 
         var isPresentingOverlayActions: Bool {
@@ -318,6 +334,8 @@ extension VideoPlayer {
         @ObservationIgnored
         private var supplementActionCancellables: [AnyCancellable] = []
 
+        private var mediaSegmentCancellable: AnyCancellable?
+
         #if os(iOS)
         var panHandlingAction: (any _PanHandlingAction)?
         var didSwipe: Bool = false
@@ -435,6 +453,26 @@ extension VideoPlayer {
                     if self.supplements.isEmpty {
                         self.containerView?.cancelSupplementPan()
                     }
+                }
+            mediaSegmentCancellable = manager.$playbackItem
+                .map { item -> AnyPublisher<Void, Never> in
+                    guard let observer = item?.mediaSegmentObserver else {
+                        return Just(()).eraseToAnyPublisher()
+                    }
+
+                    observer.isPresentingActions = { [weak self] in
+                        self?.isPresentingOverlayActions ?? true
+                    }
+
+                    return observer.objectWillChange
+                        .map { _ in () }
+                        .prepend(())
+                        .eraseToAnyPublisher()
+                }
+                .switchToLatest()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] in
+                    self?.withMutation(keyPath: \.overlayActions) {}
                 }
             playbackItemCancellable = manager.$playbackItem
                 .sink { [weak self] _ in

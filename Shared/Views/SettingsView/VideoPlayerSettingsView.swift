@@ -40,6 +40,19 @@ struct VideoPlayerSettingsView: View {
     @Default(.VideoPlayer.resumeOffset)
     private var resumeOffset
 
+    // MARK: - Media Segment Defaults
+
+    @Default(.VideoPlayer.MediaSegments.intro)
+    private var introSegmentBehavior
+    @Default(.VideoPlayer.MediaSegments.recap)
+    private var recapSegmentBehavior
+    @Default(.VideoPlayer.MediaSegments.preview)
+    private var previewSegmentBehavior
+    @Default(.VideoPlayer.MediaSegments.commercial)
+    private var commercialSegmentBehavior
+    @Default(.VideoPlayer.MediaSegments.outro)
+    private var outroSegmentBehavior
+
     // MARK: - Slider Defaults
 
     @Default(.VideoPlayer.Overlay.chapterSlider)
@@ -96,6 +109,8 @@ struct VideoPlayerSettingsView: View {
             buttonSettings
 
             resumeSettings
+
+            mediaSegmentSettings
 
             sliderSettings
 
@@ -250,6 +265,23 @@ struct VideoPlayerSettingsView: View {
             Text(L10n.resume)
         } footer: {
             Text(L10n.resumeOffsetDescription)
+        }
+    }
+
+    // MARK: - Media Segment Settings
+
+    @ViewBuilder
+    private var mediaSegmentSettings: some View {
+        Section {
+            PlatformPicker(L10n.intro, selection: $introSegmentBehavior)
+            PlatformPicker(L10n.recap, selection: $recapSegmentBehavior)
+            PlatformPicker(L10n.preview, selection: $previewSegmentBehavior)
+            PlatformPicker(L10n.commercials, selection: $commercialSegmentBehavior)
+            PlatformPicker(L10n.credits, selection: $outroSegmentBehavior)
+        } header: {
+            Text(L10n.skipSegments)
+        } footer: {
+            Text(L10n.skipSegmentsDescription)
         }
     }
 
